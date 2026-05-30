@@ -994,10 +994,12 @@
         this.textContent = 'Résultat copié ✓';
         setTimeout(() => { this.textContent = 'Partager ↗'; }, 2200);
       };
+      chalBtn.classList.add('on');
       chOv.style.display = 'flex';
       requestAnimationFrame(() => chOv.classList.add('show'));
     }
     function closeChallenge() {
+      chalBtn.classList.remove('on');
       chOv.classList.remove('show');
       setTimeout(() => { chOv.style.display = 'none'; }, 300);
     }
@@ -1008,7 +1010,6 @@
       const st = EPICURE_GAME.dailyLoad(ds);
       const sk = EPICURE_GAME.streakLoad();
       if (st && st.completed) {
-        chalBtn.classList.add('on');
         chalBtn.title = `Défi du jour — ${st.bestTitle} (${st.bestScore} pts)`;
       }
       if (sk.count >= 2) {
