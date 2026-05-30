@@ -50,5 +50,39 @@ window.EPICURE_GAME = (function () {
       pepite: (minF >= 0.25) && (surprise >= 60)   // tient ET ose
     };
   }
-  return { compositionScore, pairSurprise, surpriseVerdict };
+
+  // ── Verdict de chef (barème sur harmonie + surprise) ──────────────────
+  function chefVerdict(G) {
+    if (!G || G.harmony < 25) return { stars: 0, title: 'Le plat ne tient pas' };
+    if (G.pepite || (G.harmony >= 40 && G.surprise >= 45)) return { stars: 3, title: 'Coup de génie' };
+    if (G.harmony >= 32 && G.surprise >= 20) return { stars: 2, title: 'Belle assiette' };
+    return { stars: 1, title: 'Correct' };
+  }
+
+  // ── Carnet de découvertes (localStorage) ──────────────────────────────
+  const CARNET_KEY = 'atlas_carnet_v1';
+  function carnetLoad() {
+    try { return JSON.parse(localStorage.getItem(CARNET_KEY)) || []; } catch (e) { return []; }
+  }
+  function carnetSave(entries) {
+    try { localStorage.setItem(CARNET_KEY, JSON.stringify(entries)); } catch (e) {}
+  }
+  function carnetEntryKey(names) { return [...names].sort().join('|'); }
+  function carnetHas(names) {
+    const key = carnetEntryKey(names);
+    return carnetLoad().some(e => carnetEntryKey(e.names) === key);
+  }
+  function carnetAdd(names, G) {
+    const entries = carnetLoad();
+    const key = carnetEntryKey(names);
+    if (entries.some(e => carnetEntryKey(e.names) === key)) return { added: false };
+    const v = chefVerdict(G);
+    entries.unshift({ names, harmony: G.harmony, surprise: G.surprise, stars: v.stars, ts: Date.now() });
+    carnetSave(entries);
+    return { added: true };
+  }
+  function carnetCount() { return carnetLoad().length; }
+
+  return { compositionScore, chefVerdict, pairSurprise, surpriseVerdict,
+           carnetAdd, carnetHas, carnetCount, carnetLoad };
 })();

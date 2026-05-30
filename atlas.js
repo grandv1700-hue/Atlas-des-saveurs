@@ -57,6 +57,7 @@
   let ax = 0.42, ay = 0.45, zoom = 1, autorot = true, centered = false;
   let query = [];     // indices des ingrédients de la requête
   let results = [];   // résultats classés : [{ i, count, dist, rank }]
+  let updateCarnetBtn = () => {}, showToast = () => {};
   let textScale = (() => { const v = parseFloat(localStorage.getItem('atlas_textscale')); return (v >= 1 && v <= 2) ? v : 1; })();
   const mq = window.matchMedia('(max-width: 640px)');
   const isMobile = () => mq.matches;
@@ -326,6 +327,44 @@
     .gbar { height:7px; border-radius:4px; background:var(--surface-2); overflow:hidden; }
     .gbar-fill { height:100%; border-radius:4px; transition:width .3s ease; }
     .gnote { font-size:10.5px; font-family:var(--mono); color:var(--ink-3); margin-top:5px; line-height:1.4; }
+    .gverdict { display:flex; align-items:baseline; gap:8px; margin-bottom:11px; }
+    .gstars { font-size:15px; letter-spacing:2px; color:var(--ink); }
+    .gtitle { font-family:var(--display); font-size:15px; font-weight:700; color:var(--ink); }
+    .gpin-btn { display:block; width:100%; margin-top:10px; padding:7px 12px;
+      border:1px solid var(--line); border-radius:8px; background:transparent;
+      color:var(--ink-3); font-family:var(--mono); font-size:10px; font-weight:600;
+      text-transform:uppercase; letter-spacing:.07em; cursor:pointer; transition:color .15s,border-color .15s; }
+    .gpin-btn:hover:not(:disabled) { color:var(--ink); border-color:var(--ink-3); }
+    .gpin-btn:disabled { opacity:0.45; cursor:default; }
+    .gtoast { position:fixed; bottom:64px; left:50%; transform:translateX(-50%) translateY(8px);
+      z-index:10100; background:rgba(13,26,24,.92); border:1px solid #2a3a37;
+      color:#DCDDB2; font-family:var(--mono); font-size:12px; padding:8px 16px;
+      border-radius:9px; opacity:0; transition:opacity .2s,transform .2s;
+      pointer-events:none; white-space:nowrap; }
+    .gtoast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+    .gcn-ov { position:fixed; inset:0; z-index:10000; display:none; align-items:center;
+      justify-content:center; background:rgba(4,8,7,.72);
+      -webkit-backdrop-filter:blur(3px); backdrop-filter:blur(3px);
+      opacity:0; transition:opacity .3s ease; padding:20px; }
+    .gcn-ov.show { opacity:1; }
+    .gcn-card { position:relative; max-width:400px; width:100%; max-height:70vh;
+      overflow-y:auto; background:linear-gradient(160deg,#0f1c1a,#0a1311);
+      border:1px solid #213029; border-radius:16px; padding:22px 22px 18px;
+      color:#DCDDB2; box-shadow:0 20px 50px rgba(0,0,0,.5); }
+    .gcn-x { position:absolute; top:12px; right:14px; background:none; border:none;
+      color:#7f9a8f; font-size:20px; cursor:pointer; line-height:1; }
+    .gcn-head { font-family:var(--display); font-size:20px; font-weight:700;
+      text-transform:uppercase; color:#fff; margin:0 0 14px; }
+    .gcn-empty { font-size:13px; color:#7f9a8f; line-height:1.55; }
+    .gcn-entry { display:flex; align-items:center; gap:10px; padding:10px 0;
+      border-bottom:1px solid #1c2a25; cursor:pointer; transition:opacity .15s; }
+    .gcn-entry:last-child { border-bottom:none; }
+    .gcn-entry:hover { opacity:0.72; }
+    .gcn-stars { font-size:13px; letter-spacing:1px; flex-shrink:0; color:var(--ink); }
+    .gcn-names { flex:1; font-size:13px; color:var(--ink-2); min-width:0;
+      overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .gcn-scores { font-family:var(--mono); font-size:10px; color:var(--ink-4);
+      flex-shrink:0; white-space:nowrap; }
     `;
     document.head.appendChild(s);
   })();
@@ -335,12 +374,16 @@
   const barW = (v) => Math.max(3, Math.min(100, (v / 0.5) * 100));
 
   function scoreHeader(G) {
-    const pep = G.pepite ? '<span class="gpep">✨ Pépite</span>' : '';
+    const V = EPICURE_GAME.chefVerdict(G);
+    const stars = '★'.repeat(V.stars) + '☆'.repeat(3 - V.stars);
+    const pep = G.pepite ? ' <span class="gpep">✨ Pépite</span>' : '';
     const hv = G.harmonyVerdict, sv = G.surpriseVerdict;
     const weak = G.weakest ? `<div class="gnote">Maillon faible : ${PTS[G.weakest.i].fr} × ${PTS[G.weakest.j].fr}</div>` : '';
     const find = (G.bold && G.bold.s > 0) ? `<div class="gnote">Trouvaille : ${PTS[G.bold.i].fr} × ${PTS[G.bold.j].fr}</div>` : '';
+    const pinBtn = (V.stars >= 2 || G.pepite)
+      ? `<button class="gpin-btn" id="gPinBtn">+ Épingler au carnet</button>` : '';
     return `<div class="gscore">
-      <div class="lbl">Score du plat ${pep}</div>
+      <div class="gverdict"><span class="gstars">${stars}</span> <span class="gtitle">${V.title}</span>${pep}</div>
       <div class="gaxis">
         <div class="gaxis-top"><span class="gaxis-name">Harmonie</span>
           <span><span class="gaxis-val">${G.harmony}</span><span class="gaxis-lab" style="color:${hv.color}">${hv.label}</span></span></div>
@@ -353,6 +396,7 @@
         <div class="gbar"><div class="gbar-fill" style="width:${G.surprise}%;background:${sv.color}"></div></div>
         ${find}
       </div>
+      ${pinBtn}
     </div>`;
   }
 
@@ -418,6 +462,25 @@
       b.onclick = (e) => { e.stopPropagation(); removeFromQuery(+b.dataset.i); });
     panel.querySelectorAll('.accord').forEach(el =>
       el.onclick = () => addToQuery(+el.dataset.i));
+    const pinEl = panel.querySelector('#gPinBtn');
+    if (pinEl) {
+      const names = query.map(i => PTS[i].fr);
+      if (EPICURE_GAME.carnetHas(names)) {
+        pinEl.textContent = '✓ Déjà épinglé'; pinEl.disabled = true;
+      }
+      pinEl.onclick = (e) => {
+        e.stopPropagation();
+        const G = EPICURE_GAME.compositionScore(query);
+        const res = EPICURE_GAME.carnetAdd(names, G);
+        if (res.added) {
+          updateCarnetBtn();
+          showToast('Ajouté au carnet ✓');
+          pinEl.textContent = '✓ Épinglé'; pinEl.disabled = true;
+        } else {
+          showToast('Déjà dans le carnet');
+        }
+      };
+    }
   }
 
   function afterQueryChange() { computeResults(); renderPanel(); refreshCenterBtn(); draw(); }
@@ -661,5 +724,83 @@
   document.getElementById('subline').textContent =
     PTS.length + ' ingrédients · proximité = parenté aromatique';
   tick();
+
+  // ── Toast ─────────────────────────────────────────────────────────────
+  let _toastEl, _toastTimer;
+  showToast = function(msg) {
+    if (!_toastEl) { _toastEl = document.createElement('div'); _toastEl.className = 'gtoast'; document.body.appendChild(_toastEl); }
+    _toastEl.textContent = msg;
+    _toastEl.classList.add('show');
+    clearTimeout(_toastTimer);
+    _toastTimer = setTimeout(() => _toastEl.classList.remove('show'), 2200);
+  };
+
+  // ── Carnet de découvertes ─────────────────────────────────────────────
+  (function initCarnet() {
+    // Bouton dans la barre de titre
+    const titleEl = document.querySelector('.title');
+    const carnetBtn = document.createElement('button');
+    carnetBtn.className = 'title-help'; carnetBtn.id = 'gCarnetBtn';
+    carnetBtn.title = 'Carnet de découvertes';
+    titleEl.insertBefore(carnetBtn, document.getElementById('introBtn'));
+
+    // Modal
+    const carnetOv = document.createElement('div');
+    carnetOv.className = 'gcn-ov';
+    carnetOv.innerHTML = `<div class="gcn-card" role="dialog" aria-modal="true" aria-label="Carnet de découvertes">
+      <button class="gcn-x" aria-label="Fermer">&#x2715;</button>
+      <div class="gcn-head">Carnet</div>
+      <div id="gCarnetList"></div>
+    </div>`;
+    document.body.appendChild(carnetOv);
+    const listEl = carnetOv.querySelector('#gCarnetList');
+
+    function openCarnet() {
+      const entries = EPICURE_GAME.carnetLoad();
+      if (entries.length === 0) {
+        listEl.innerHTML = '<div class="gcn-empty">Aucune découverte encore.<br/>Composez un plat notable et épinglez-le !</div>';
+      } else {
+        listEl.innerHTML = entries.map((e, k) => {
+          const st = '★'.repeat(e.stars) + '☆'.repeat(3 - e.stars);
+          return `<div class="gcn-entry" data-k="${k}">
+            <span class="gcn-stars">${st}</span>
+            <span class="gcn-names">${e.names.join(' · ')}</span>
+            <span class="gcn-scores">♥${e.harmony} ✨${e.surprise}</span>
+          </div>`;
+        }).join('');
+        listEl.querySelectorAll('.gcn-entry').forEach(el => {
+          el.onclick = () => {
+            const e = entries[+el.dataset.k];
+            clearQuery();
+            e.names.forEach(fr => {
+              const idx = PTS.findIndex(p => p.fr === fr);
+              if (idx >= 0) addToQuery(idx);
+            });
+            closeCarnet();
+          };
+        });
+      }
+      carnetOv.style.display = 'flex';
+      requestAnimationFrame(() => carnetOv.classList.add('show'));
+    }
+    function closeCarnet() {
+      carnetOv.classList.remove('show');
+      setTimeout(() => { carnetOv.style.display = 'none'; }, 300);
+    }
+
+    carnetBtn.onclick = openCarnet;
+    carnetOv.querySelector('.gcn-x').onclick = closeCarnet;
+    carnetOv.addEventListener('click', (e) => { if (e.target === carnetOv) closeCarnet(); });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && carnetOv.classList.contains('show')) closeCarnet();
+    });
+
+    updateCarnetBtn = function() {
+      const n = EPICURE_GAME.carnetCount();
+      carnetBtn.textContent = n > 0 ? `Carnet (${n})` : 'Carnet';
+    };
+    updateCarnetBtn();
+  })();
+
   setTimeout(() => document.getElementById('loader').classList.add('gone'), 380);
 })();
