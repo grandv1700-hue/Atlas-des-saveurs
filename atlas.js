@@ -449,7 +449,8 @@
     const find = (G.bold && G.bold.s > 0) ? `<div class="gnote">Trouvaille : ${PTS[G.bold.i].fr} × ${PTS[G.bold.j].fr}</div>` : '';
     const actionBtns = notable
       ? `<button class="gfiche-btn" id="gFicheBtn">Voir la fiche ↗</button>
-         <button class="gpin-btn" id="gPinBtn">+ Épingler au carnet</button>`
+         <button class="gpin-btn" id="gPinBtn">+ Épingler au carnet</button>
+         <button class="gshare-btn" id="gShareBtn">📸 Carte de découverte</button>`
       : `<div class="ggate">Encore un cran pour débloquer la fiche →</div>`;
     return `<div class="gscore">
       <div class="gverdict"><span class="gstars">${stars}</span> <span class="gtitle">${V.title}</span>${pep}</div>
@@ -551,6 +552,11 @@
       el.onclick = () => addToQuery(+el.dataset.i));
     const ficheEl = panel.querySelector('#gFicheBtn');
     if (ficheEl) ficheEl.onclick = (e) => { e.stopPropagation(); openFiche([...query]); };
+    const shareEl = panel.querySelector('#gShareBtn');
+    if (shareEl) shareEl.onclick = (e) => {
+      e.stopPropagation();
+      if (window.ATLAS_SHARE) window.ATLAS_SHARE.generate(EPICURE_GAME.compositionScore(query), [...query]);
+    };
     const pinEl = panel.querySelector('#gPinBtn');
     if (pinEl) {
       const names = query.map(i => PTS[i].fr);
