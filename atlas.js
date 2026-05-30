@@ -59,6 +59,7 @@
   let results = [];   // résultats classés : [{ i, count, dist, rank }]
   let updateCarnetBtn = () => {}, showToast = () => {};
   let acIdx = -1;     // index surligné dans la liste de suggestions (-1 = aucun)
+  let ficheOv = null; // modale fiche d'accord (créée à la demande)
   let textScale = (() => { const v = parseFloat(localStorage.getItem('atlas_textscale')); return (v >= 1 && v <= 2) ? v : 1; })();
   const mq = window.matchMedia('(max-width: 640px)');
   const isMobile = () => mq.matches;
@@ -366,6 +367,55 @@
       overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     .gcn-scores { font-family:var(--mono); font-size:10px; color:var(--ink-4);
       flex-shrink:0; white-space:nowrap; }
+    .gfiche-btn { display:block; width:100%; margin-top:8px; padding:7px 12px;
+      border:1px solid var(--line); border-radius:8px; background:transparent;
+      color:var(--ink-3); font-family:var(--mono); font-size:10px; font-weight:600;
+      text-transform:uppercase; letter-spacing:.07em; cursor:pointer;
+      transition:color .15s,border-color .15s; }
+    .gfiche-btn:hover { color:var(--ink); border-color:var(--ink-3); }
+    .af-ov { position:fixed; inset:0; z-index:10200; display:none; align-items:center;
+      justify-content:center; background:rgba(4,8,7,.72);
+      -webkit-backdrop-filter:blur(3px); backdrop-filter:blur(3px);
+      opacity:0; transition:opacity .3s ease; padding:16px; }
+    .af-ov.show { opacity:1; }
+    .af-card { position:relative; max-width:420px; width:100%; max-height:85vh;
+      overflow-y:auto; background:linear-gradient(160deg,#0f1c1a,#0a1311);
+      border:1px solid #213029; border-radius:18px; padding:24px 22px 20px;
+      color:#DCDDB2; font-family:-apple-system,BlinkMacSystemFont,sans-serif;
+      box-shadow:0 24px 60px rgba(0,0,0,.55); }
+    .af-x { position:absolute; top:14px; right:16px; background:none; border:none;
+      color:#7f9a8f; font-size:20px; cursor:pointer; line-height:1; }
+    .af-h1 { font:700 20px/1.2 Impact,Haettenschweiler,sans-serif; letter-spacing:.5px;
+      color:#fff; margin:0 0 4px; text-transform:uppercase; }
+    .af-sub { font-size:11px; font-family:var(--mono); color:#7f9a8f;
+      text-transform:uppercase; letter-spacing:.08em; margin:0 0 16px; }
+    .af-ingreds { display:flex; flex-wrap:wrap; gap:7px; margin-bottom:16px; }
+    .af-ingred { display:flex; align-items:center; gap:5px; padding:5px 10px;
+      background:rgba(255,255,255,.06); border-radius:8px; font-size:13.5px; }
+    .af-sh { font-family:var(--mono); font-size:9.5px; font-weight:600;
+      text-transform:uppercase; letter-spacing:.1em; color:#7f9a8f; margin-bottom:8px; }
+    .af-section { margin-bottom:14px; }
+    .af-verdict { display:flex; align-items:baseline; gap:8px; }
+    .af-stars { font-size:15px; letter-spacing:2px; }
+    .af-vtitle { font:700 15px/1 Impact,Haettenschweiler,sans-serif; letter-spacing:.4px; text-transform:uppercase; color:#fff; }
+    .af-scores { font-family:var(--mono); font-size:11px; color:#7f9a8f; margin-top:5px; }
+    .af-bold { font-size:13px; line-height:1.55; color:#c8d8cc; margin:0; }
+    .af-roles { display:flex; flex-direction:column; gap:5px; }
+    .af-role { display:flex; gap:8px; font-size:13px; }
+    .af-rname { color:var(--ink,#DCDDB2); font-weight:600; }
+    .af-rval  { color:#8fa89c; }
+    .af-tips { display:flex; flex-direction:column; gap:5px; }
+    .af-tip { font-size:13px; color:#c8d8cc; }
+    .af-tip::before { content:'· '; color:#7f9a8f; }
+    .af-foot { display:flex; gap:10px; margin-top:18px; }
+    .af-share { flex:1; padding:10px 0; border:none; border-radius:10px;
+      background:var(--signature,#E8B94E); color:#08100F;
+      font:700 13px/1 -apple-system,sans-serif; cursor:pointer; transition:opacity .15s; }
+    .af-share:hover { opacity:.82; }
+    .af-close { flex:1; padding:10px 0; border:1px solid #213029; border-radius:10px;
+      background:transparent; color:#DCDDB2;
+      font:600 13px/1 -apple-system,sans-serif; cursor:pointer; transition:border-color .15s; }
+    .af-close:hover { border-color:#2a3a37; }
     `;
     document.head.appendChild(s);
   })();
@@ -383,6 +433,7 @@
     const find = (G.bold && G.bold.s > 0) ? `<div class="gnote">Trouvaille : ${PTS[G.bold.i].fr} × ${PTS[G.bold.j].fr}</div>` : '';
     const pinBtn = (V.stars >= 2 || G.pepite)
       ? `<button class="gpin-btn" id="gPinBtn">+ Épingler au carnet</button>` : '';
+    const ficheBtn = `<button class="gfiche-btn" id="gFicheBtn">Fiche d'accord ↗</button>`;
     return `<div class="gscore">
       <div class="gverdict"><span class="gstars">${stars}</span> <span class="gtitle">${V.title}</span>${pep}</div>
       <div class="gaxis">
@@ -398,6 +449,7 @@
         ${find}
       </div>
       ${pinBtn}
+      ${ficheBtn}
     </div>`;
   }
 
@@ -463,6 +515,8 @@
       b.onclick = (e) => { e.stopPropagation(); removeFromQuery(+b.dataset.i); });
     panel.querySelectorAll('.accord').forEach(el =>
       el.onclick = () => addToQuery(+el.dataset.i));
+    const ficheEl = panel.querySelector('#gFicheBtn');
+    if (ficheEl) ficheEl.onclick = (e) => { e.stopPropagation(); openFiche([...query]); };
     const pinEl = panel.querySelector('#gPinBtn');
     if (pinEl) {
       const names = query.map(i => PTS[i].fr);
@@ -820,6 +874,80 @@
       carnetBtn.textContent = n > 0 ? `Carnet (${n})` : 'Carnet';
     };
     updateCarnetBtn();
+  })();
+
+  // ── Fiche d'accord ────────────────────────────────────────────────────
+  function openFiche(sel) {
+    if (!ficheOv) {
+      ficheOv = document.createElement('div');
+      ficheOv.className = 'af-ov';
+      ficheOv.innerHTML = '<div class="af-card"><button class="af-x" id="afX">&#x2715;</button><div id="afContent"></div></div>';
+      document.body.appendChild(ficheOv);
+      ficheOv.querySelector('#afX').onclick = closeFiche;
+      ficheOv.addEventListener('click', (e) => { if (e.target === ficheOv) closeFiche(); });
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && ficheOv && ficheOv.classList.contains('show')) closeFiche();
+      });
+    }
+    const F = EPICURE_GAME.platFiche(sel);
+    if (!F) return;
+    const stars  = '★'.repeat(F.V.stars) + '☆'.repeat(3 - F.V.stars);
+    const ingHtml = F.ingredients.map(ig => `<span class="af-ingred">${ig.e} ${ig.fr}</span>`).join('');
+    const boldHtml = F.boldText
+      ? `<div class="af-section"><div class="af-sh">✨ Lien surprenant</div><p class="af-bold">${F.boldText}</p></div>`
+      : '';
+    const rolesHtml = F.ingredients.map(ig =>
+      `<div class="af-role"><span class="af-rname">${ig.e} ${ig.fr}</span><span class="af-rval">→ ${ig.role}</span></div>`
+    ).join('');
+    const tipsHtml = F.usages.map(t => `<div class="af-tip">${t}</div>`).join('');
+    ficheOv.querySelector('#afContent').innerHTML = `
+      <div class="af-h1">Fiche d'accord</div>
+      <div class="af-sub">${F.ingredients.length} ingrédient${F.ingredients.length > 1 ? 's' : ''}</div>
+      <div class="af-ingreds">${ingHtml}</div>
+      <div class="af-section">
+        <div class="af-sh">Verdict</div>
+        <div class="af-verdict"><span class="af-stars">${stars}</span><span class="af-vtitle">${F.V.title}</span></div>
+        <div class="af-scores">Harmonie ${F.G.harmony} · Surprise ${F.G.surprise}</div>
+      </div>
+      ${boldHtml}
+      <div class="af-section">
+        <div class="af-sh">Rôles</div>
+        <div class="af-roles">${rolesHtml}</div>
+      </div>
+      <div class="af-section">
+        <div class="af-sh">Pistes d'usage</div>
+        <div class="af-tips">${tipsHtml}</div>
+      </div>
+      <div class="af-foot">
+        <button class="af-share" id="afShare">Partager ↗</button>
+        <button class="af-close" id="afClose">Fermer</button>
+      </div>`;
+    ficheOv.querySelector('#afShare').onclick = function () {
+      const hash = '#plat=' + sel.join(',');
+      history.replaceState(null, '', hash);
+      navigator.clipboard.writeText(location.href).catch(() => {});
+      this.textContent = 'Lien copié ✓';
+      setTimeout(() => { this.textContent = 'Partager ↗'; }, 2200);
+    };
+    ficheOv.querySelector('#afClose').onclick = closeFiche;
+    ficheOv.style.display = 'flex';
+    requestAnimationFrame(() => ficheOv.classList.add('show'));
+  }
+  function closeFiche() {
+    if (!ficheOv) return;
+    ficheOv.classList.remove('show');
+    setTimeout(() => { ficheOv.style.display = 'none'; }, 300);
+  }
+
+  // ── Restauration depuis URL hash (#plat=i,j,k) ────────────────────────
+  (function restoreHash() {
+    const m = location.hash.match(/^#plat=([\d,]+)$/);
+    if (!m) return;
+    const idx = m[1].split(',').map(Number).filter(n => n >= 0 && n < PTS.length);
+    if (idx.length >= 2) {
+      idx.forEach(i => addToQuery(i));
+      setTimeout(() => openFiche(idx), 600);
+    }
   })();
 
   setTimeout(() => document.getElementById('loader').classList.add('gone'), 380);
