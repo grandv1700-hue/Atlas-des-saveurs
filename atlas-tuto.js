@@ -167,6 +167,17 @@
     if (btn && !btn.classList.contains('disabled') && !btn.classList.contains('on')) btn.click();
   }
 
+  // Ouvrir le menu langue (si langBtn existe)
+  function autoOpenLang() {
+    const btn = document.getElementById('langBtn');
+    if (btn) btn.click();
+  }
+
+  // Fermer le menu langue (click document = handler de fermeture dans atlas.js)
+  function autoCloseLang() {
+    document.dispatchEvent(new MouseEvent('click'));
+  }
+
   // ── Étapes ─────────────────────────────────────────────────────────────
   // targetId  : ID DOM de l'élément surligné (doit exister dans le DOM actuel)
   // onEnter   : déclenché à l'ARRIVÉE sur l'étape (démo auto si pas encore fait)
@@ -181,7 +192,8 @@
       { title: T('tuto_s3_title'), body: T('tuto_s3_body'), targetId: 'centerBtn', onEnter: autoCenter, onAdvance: null },
       { title: T('tuto_s4_title'), body: T('tuto_s4_body'), targetId: 'textBtn', onAdvance: null },
       { title: T('tuto_s5_title'), body: T('tuto_s5_body'), targetId: 'gCarnetBtn', onAdvance: null },
-      { title: T('tuto_s6_title'), body: T('tuto_s6_body'), targetId: 'spinBtn', onEnter: autoSpin, onAdvance: null },
+      { title: T('tuto_s6_title'), body: T('tuto_s6_body'), targetId: 'langBtn', onEnter: autoOpenLang, onAdvance: autoCloseLang },
+      { title: T('tuto_s7_title'), body: T('tuto_s7_body'), targetId: 'spinBtn', onEnter: autoSpin, onAdvance: null },
     ];
   }
   let STEPS = makeSteps();
