@@ -61,6 +61,7 @@
   let acIdx = -1;     // index surligné dans la liste de suggestions (-1 = aucun)
   let ficheOv = null; // modale fiche d'accord (créée à la demande)
   let prevNotable = false; // pour détecter le passage du seuil "fiche débloquée"
+  let prevPepite  = false; // pour détecter la première pépite de la session
   let textScale = (() => { const v = parseFloat(localStorage.getItem('atlas_textscale')); return (v >= 1 && v <= 2) ? v : 1; })();
   const mq = window.matchMedia('(max-width: 640px)');
   const isMobile = () => mq.matches;
@@ -397,6 +398,14 @@
     .ggate { font-family:var(--mono); font-size:10px; color:var(--ink-3);
       margin-top:9px; letter-spacing:.04em; text-align:center;
       padding:6px 10px; border:1px dashed rgba(255,255,255,.1); border-radius:7px; }
+    @keyframes pepite-flash {
+      0%   { box-shadow:0 0 0 0 rgba(232,185,78,0); }
+      20%  { box-shadow:0 0 0 10px rgba(232,185,78,.4),inset 0 0 0 1px var(--signature,#E8B94E); }
+      60%  { box-shadow:0 0 0 20px rgba(232,185,78,.1); }
+      100% { box-shadow:0 0 0 0 rgba(232,185,78,0); }
+    }
+    .pepite-pulse { animation:pepite-flash 1.3s ease-out !important;
+      border-radius:10px !important; }
     `;
     document.head.appendChild(s);
   })();
@@ -437,10 +446,23 @@
 
   function renderForce() {
     const G = window.EPICURE_GAME ? EPICURE_GAME.compositionScore(query) : null;
-    if (!G) { prevNotable = false; return ''; }
+    if (!G) { prevNotable = false; prevPepite = false; return ''; }
     const nowNotable = EPICURE_GAME.chefVerdict(G).stars >= 2 || G.pepite;
     if (nowNotable && !prevNotable) showToast('✨ Fiche débloquée !');
     prevNotable = nowNotable;
+    const nowPepite = !!G.pepite;
+    if (nowPepite && !prevPepite) {
+      let first = false;
+      try { first = !localStorage.getItem('atlas_first_pepite_v1');
+            if (first) localStorage.setItem('atlas_first_pepite_v1', '1'); } catch(e) {}
+      setTimeout(() => {
+        showToast(first ? '✨ Première pépite !' : '✨ Pépite !', first ? 3500 : 2200);
+        const el = panel && panel.querySelector('.gscore');
+        if (el) { el.classList.add('pepite-pulse');
+          setTimeout(() => el.classList.remove('pepite-pulse'), 1400); }
+      }, 40);
+    }
+    prevPepite = nowPepite;
     let detail = '';
     if (query.length >= 3) {
       const cells = [];
@@ -796,12 +818,12 @@
 
   // ── Toast ─────────────────────────────────────────────────────────────
   let _toastEl, _toastTimer;
-  showToast = function(msg) {
+  showToast = function(msg, duration) {
     if (!_toastEl) { _toastEl = document.createElement('div'); _toastEl.className = 'gtoast'; document.body.appendChild(_toastEl); }
     _toastEl.textContent = msg;
     _toastEl.classList.add('show');
     clearTimeout(_toastTimer);
-    _toastTimer = setTimeout(() => _toastEl.classList.remove('show'), 2200);
+    _toastTimer = setTimeout(() => _toastEl.classList.remove('show'), duration || 2200);
   };
 
   // ── Carnet de découvertes ─────────────────────────────────────────────
