@@ -58,6 +58,7 @@
   let query = [];     // indices des ingrédients de la requête
   let results = [];   // résultats classés : [{ i, count, dist, rank }]
   let updateCarnetBtn = () => {}, showToast = () => {};
+  let acIdx = -1;     // index surligné dans la liste de suggestions (-1 = aucun)
   let textScale = (() => { const v = parseFloat(localStorage.getItem('atlas_textscale')); return (v >= 1 && v <= 2) ? v : 1; })();
   const mq = window.matchMedia('(max-width: 640px)');
   const isMobile = () => mq.matches;
@@ -576,6 +577,9 @@
   const acBox = document.createElement('div');
   acBox.id = 'ac';
   sbox.parentElement.appendChild(acBox);
+  (function(){ const s = document.createElement('style');
+    s.textContent = '#ac .ac-item.sel { background:var(--surface-3) !important; border-left:2px solid var(--accent); padding-left:9px; }';
+    document.head.appendChild(s); })();
   const allSorted = [...Array(PTS.length).keys()].sort((a, b) => PTS[a].fr.localeCompare(PTS[b].fr));
   acBox.addEventListener('mousedown', (e) => {
     const el = e.target.closest('.ac-item'); if (!el) return;
@@ -599,20 +603,35 @@
   function renderAC() {
     if (!acMatches.length) { acBox.style.display = 'none'; acBox.innerHTML = ''; return; }
     acBox.innerHTML = acMatches.map((i, k) =>
-      `<div class="ac-item${k === 0 ? ' sel' : ''}" data-i="${i}"><span class="ac-e">${PTS[i].e}</span><span class="ac-fr">${PTS[i].fr}</span><span class="ac-c">${catFR(PTS[i].c)}</span></div>`
+      `<div class="ac-item${k === acIdx ? ' sel' : ''}" data-i="${i}"><span class="ac-e">${PTS[i].e}</span><span class="ac-fr">${PTS[i].fr}</span><span class="ac-c">${catFR(PTS[i].c)}</span></div>`
     ).join('');
     acBox.style.display = 'block';
   }
   function pickAC(i) { addToQuery(i); sbox.value = ''; acMatches = []; renderAC(); }
-  function hideAC() { acBox.style.display = 'none'; acBox.innerHTML = ''; acMatches = []; }
+  function hideAC() { acBox.style.display = 'none'; acBox.innerHTML = ''; acMatches = []; acIdx = -1; }
   sbox.addEventListener('input', () => {
     const q = sbox.value.toLowerCase().trim();
+    acIdx = -1;
     acMatches = q ? rankMatches(q) : [];
     renderAC();
   });
+  function acItems() { return Array.from(acBox.querySelectorAll('.ac-item')); }
+  function setAcIdx(n) {
+    const items = acItems(); if (!items.length) return;
+    acIdx = ((n % items.length) + items.length) % items.length;
+    items.forEach((el, k) => el.classList.toggle('sel', k === acIdx));
+    items[acIdx].scrollIntoView({ block: 'nearest' });
+  }
   sbox.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') { if (acMatches.length) pickAC(acMatches[0]); }
-    else if (e.key === 'Escape') { hideAC(); sbox.blur(); }
+    const items = acItems();
+    if (e.key === 'ArrowDown') {
+      e.preventDefault(); if (items.length) setAcIdx(acIdx < 0 ? 0 : acIdx + 1);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault(); if (items.length) setAcIdx(acIdx <= 0 ? items.length - 1 : acIdx - 1);
+    } else if (e.key === 'Enter') {
+      if (acIdx >= 0 && items[acIdx]) pickAC(+items[acIdx].dataset.i);
+      else if (acMatches.length) pickAC(acMatches[0]);
+    } else if (e.key === 'Escape') { hideAC(); sbox.blur(); }
   });
   sbox.addEventListener('blur', () => setTimeout(hideAC, 120));
   let fullHTML = '', fullKey = '';
@@ -629,6 +648,7 @@
   }
   sbox.addEventListener('focus', () => {
     if (sbox.value.trim()) return;            // si on a déjà tapé, on garde le filtre
+    acIdx = -1;
     acMatches = [];                           // liste complète : Entrée n'auto-ajoute pas
     acBox.innerHTML = buildFullList();        // toute la base (déjà en mémoire), triée A→Z
     acBox.style.display = 'block';
