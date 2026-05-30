@@ -116,51 +116,27 @@
   // targetId  : ID DOM de l'élément surligné (doit exister dans le DOM actuel)
   // onEnter   : déclenché à l'ARRIVÉE sur l'étape (démo auto si pas encore fait)
   // onAdvance : déclenché au clic "Suivant" (garantit l'état pour l'étape suivante)
-  const STEPS = [
-    { title: 'Rechercher un ingrédient',
-      body: 'Tape un nom dans la barre de recherche, ou clique directement un point du nuage pour l\'ajouter à ta sélection.',
-      targetId: 'searchWrapBtn',
-      onAdvance: () => ensureN(1) },
-
-    { title: 'Explorer une combinaison',
-      body: 'Ajoutes-en un deuxième — le Score de la combinaison (Harmonie + Surprise) apparaît dans le panneau de droite.',
-      targetId: 'searchWrapBtn',
-      onAdvance: () => ensureN(2) },
-
-    { title: 'Filtrer par catégorie',
-      body: 'Clique un item dans la légende (bas gauche) pour n\'afficher qu\'une famille d\'ingrédients et lire leurs noms sur la carte.',
-      targetId: 'leg',
-      onEnter:   autoFilterCat,
-      onAdvance: resetCatFilter },
-
-    { title: 'Centrer la vue',
-      body: 'Recadre la carte sur les ingrédients de ta sélection courante.',
-      targetId: 'centerBtn',
-      onEnter:   autoCenter,
-      onAdvance: null },
-
-    { title: 'Taille du texte',
-      body: 'Ajuste la taille des labels affichés sur la carte — pratique sur grand écran ou mobile.',
-      targetId: 'textBtn',
-      onAdvance: null },
-
-    { title: 'Carnet & pépites',
-      body: 'Épingle tes meilleurs accords (★★+) au Carnet pour y revenir. Les pépites sont des accords audacieux qui tiennent aromatiquement.',
-      targetId: 'gCarnetBtn',
-      onAdvance: null },
-
-    { title: 'Rotation automatique',
-      body: 'Ce bouton lance ou arrête la rotation 3D. Utile pour explorer l\'ensemble du nuage.',
-      targetId: 'spinBtn',
-      onEnter:   autoSpin,
-      onAdvance: null },
-  ];
+  // Étapes — titres/corps via t() pour multilingue
+  function makeSteps() {
+    const T = window.t || (k => k);
+    return [
+      { title: T('tuto_s0_title'), body: T('tuto_s0_body'), targetId: 'searchWrapBtn', onAdvance: () => ensureN(1) },
+      { title: T('tuto_s1_title'), body: T('tuto_s1_body'), targetId: 'searchWrapBtn', onAdvance: () => ensureN(2) },
+      { title: T('tuto_s2_title'), body: T('tuto_s2_body'), targetId: 'leg', onEnter: autoFilterCat, onAdvance: resetCatFilter },
+      { title: T('tuto_s3_title'), body: T('tuto_s3_body'), targetId: 'centerBtn', onEnter: autoCenter, onAdvance: null },
+      { title: T('tuto_s4_title'), body: T('tuto_s4_body'), targetId: 'textBtn', onAdvance: null },
+      { title: T('tuto_s5_title'), body: T('tuto_s5_body'), targetId: 'gCarnetBtn', onAdvance: null },
+      { title: T('tuto_s6_title'), body: T('tuto_s6_body'), targetId: 'spinBtn', onEnter: autoSpin, onAdvance: null },
+    ];
+  }
+  let STEPS = makeSteps();
 
   // ── Bubble DOM ────────────────────────────────────────────────────────
   const bub = document.createElement('div');
   bub.className = 'atb';
   bub.setAttribute('role', 'dialog');
   bub.setAttribute('aria-live', 'polite');
+  const T0 = window.t || (k => k);
   bub.innerHTML = `
     <div class="atb-head">
       <span class="atb-title" id="atbTitle"></span>
@@ -168,8 +144,8 @@
     </div>
     <p class="atb-body" id="atbBody"></p>
     <div class="atb-foot">
-      <button class="atb-next" id="atbNext">Suivant →</button>
-      <button class="atb-skip" id="atbSkip">Passer</button>
+      <button class="atb-next" id="atbNext">${T0('tuto_next')}</button>
+      <button class="atb-skip" id="atbSkip">${T0('tuto_skip')}</button>
     </div>`;
   document.body.appendChild(bub);
 
@@ -187,7 +163,8 @@
     document.getElementById('atbTitle').textContent = s.title;
     document.getElementById('atbBody').textContent  = s.body;
     document.getElementById('atbStep').textContent  = `${n + 1} / ${STEPS.length}`;
-    document.getElementById('atbNext').textContent  = n === STEPS.length - 1 ? 'Terminer ✓' : 'Suivant →';
+    const T = window.t || (k => k);
+    document.getElementById('atbNext').textContent  = n === STEPS.length - 1 ? T('tuto_finish') : T('tuto_next');
     setFocus(s.targetId);
     bub.classList.add('show');
     if (focusEl) focusEl.scrollIntoView({ block: 'nearest', inline: 'nearest' });
@@ -238,7 +215,7 @@
     if (!goBtn) return;
     const btn = document.createElement('button');
     btn.id = 'atbReplay'; btn.className = 'atb-replay';
-    btn.textContent = '↺ Revoir le tutoriel';
+    btn.textContent = (window.t || (k=>k))('tuto_replay');
     btn.onclick = (e) => {
       e.stopPropagation();
       window.ATLAS_INTRO && window.ATLAS_INTRO.close();

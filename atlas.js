@@ -32,13 +32,16 @@
   const colorOf = (c) => PALETTES[palName][c] || '#8C8C7A';
 
   // ── Traduction FR des catégories ───────────────────────────────────────
-  const CAT_FR = {
-    Pantry:'Épicerie', Vegetable:'Légume', Beverage:'Boisson', Grain:'Céréale',
-    Fruit:'Fruit', Spice:'Épice', Fish:'Poisson', Dairy:'Laitier', Meat:'Viande',
-    Herb:'Herbe', Sweet:'Sucré', Legume:'Légumineuse', 'Fat/Oil':'Huile / Gras',
-    Seafood:'Fruit de mer', 'Nut/Seed':'Noix / Graine', Bakery:'Boulangerie', Seed:'Graine'
-  };
-  const catFR = (c) => CAT_FR[c] || c;
+  // Nom de catégorie traduit (repli sur clé brute si absent)
+  const catFR = (c) => (window.t ? window.t('cat_' + c) : c) || c;
+  // Nom d'ingrédient dans la langue active
+  const ingName = (i) => window.ATLAS_LANG ? window.ATLAS_LANG.ingName(PTS[i], i) : (PTS[i].fr);
+  // Verdict traduit (game.js retourne le titre FR, on mappe vers une clé i18n)
+  const VERDICT_KEY = { 'Ne tient pas':'verdict_0','Correct':'verdict_1','Belle combinaison':'verdict_2','Combinaison de génie':'verdict_3' };
+  const tVerdict = (title) => window.t ? (window.t(VERDICT_KEY[title] || 'verdict_1') || title) : title;
+  // Surprise label traduit
+  const SURPRISE_KEY = { 'pépite':'surprise_pepite','audacieux':'surprise_audacieux','un peu osé':'surprise_ose','sage':'surprise_sage' };
+  const tSurprise = (label) => window.t ? (window.t(SURPRISE_KEY[label]) || label) : label;
 
   // ── Canvas setup ────────────────────────────────────────────────────────
   const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
@@ -445,24 +448,24 @@
     const stars = '★'.repeat(V.stars) + '☆'.repeat(3 - V.stars);
     const pep = G.pepite ? ' <span class="gpep">✨ Pépite</span>' : '';
     const hv = G.harmonyVerdict, sv = G.surpriseVerdict;
-    const weak = G.weakest ? `<div class="gnote">Maillon faible : ${PTS[G.weakest.i].fr} × ${PTS[G.weakest.j].fr}</div>` : '';
-    const find = (G.bold && G.bold.s > 0) ? `<div class="gnote">Trouvaille : ${PTS[G.bold.i].fr} × ${PTS[G.bold.j].fr}</div>` : '';
+    const weak = G.weakest ? `<div class="gnote">${t('score_weak')} ${ingName(G.weakest.i)} × ${ingName(G.weakest.j)}</div>` : '';
+    const find = (G.bold && G.bold.s > 0) ? `<div class="gnote">${t('score_bold')} ${ingName(G.bold.i)} × ${ingName(G.bold.j)}</div>` : '';
     const actionBtns = notable
-      ? `<button class="gfiche-btn" id="gFicheBtn">Voir la fiche ↗</button>
-         <button class="gpin-btn" id="gPinBtn">+ Épingler au carnet</button>
-         <button class="gshare-btn" id="gShareBtn">📸 Carte de découverte</button>`
-      : `<div class="ggate">Encore un cran pour débloquer la fiche →</div>`;
+      ? `<button class="gfiche-btn" id="gFicheBtn">${t('btn_fiche')}</button>
+         <button class="gpin-btn" id="gPinBtn">${t('btn_pin')}</button>
+         <button class="gshare-btn" id="gShareBtn">${t('btn_share')}</button>`
+      : `<div class="ggate">${t('score_gate')}</div>`;
     return `<div class="gscore">
-      <div class="gverdict"><span class="gstars">${stars}</span> <span class="gtitle">${V.title}</span>${pep}</div>
+      <div class="gverdict"><span class="gstars">${stars}</span> <span class="gtitle">${tVerdict(V.title)}</span>${pep}</div>
       <div class="gaxis">
-        <div class="gaxis-top"><span class="gaxis-name">Harmonie</span>
-          <span><span class="gaxis-val">${G.harmony}</span><span class="gaxis-lab" style="color:${hv.color}">${hv.label}</span></span></div>
+        <div class="gaxis-top"><span class="gaxis-name">${t('score_harmony')}</span>
+          <span><span class="gaxis-val">${G.harmony}</span><span class="gaxis-lab" style="color:${hv.color}">${tSurprise(hv.label)}</span></span></div>
         <div class="gbar"><div class="gbar-fill" style="width:${G.harmony}%;background:${hv.color}"></div></div>
         ${weak}
       </div>
       <div class="gaxis">
-        <div class="gaxis-top"><span class="gaxis-name">Surprise</span>
-          <span><span class="gaxis-val">${G.surprise}</span><span class="gaxis-lab" style="color:${sv.color}">${sv.label}</span></span></div>
+        <div class="gaxis-top"><span class="gaxis-name">${t('score_surprise')}</span>
+          <span><span class="gaxis-val">${G.surprise}</span><span class="gaxis-lab" style="color:${sv.color}">${tSurprise(sv.label)}</span></span></div>
         <div class="gbar"><div class="gbar-fill" style="width:${G.surprise}%;background:${sv.color}"></div></div>
         ${find}
       </div>
@@ -474,7 +477,7 @@
     const G = window.EPICURE_GAME ? EPICURE_GAME.compositionScore(query) : null;
     if (!G) { prevNotable = false; prevPepite = false; return ''; }
     const nowNotable = EPICURE_GAME.chefVerdict(G).stars >= 2 || G.pepite;
-    if (nowNotable && !prevNotable) showToast('✨ Fiche débloquée !');
+    if (nowNotable && !prevNotable) showToast(t('toast_fiche'));
     prevNotable = nowNotable;
     const nowPepite = !!G.pepite;
     if (nowPepite && !prevPepite) {
@@ -482,7 +485,7 @@
       try { first = !localStorage.getItem('atlas_first_pepite_v1');
             if (first) localStorage.setItem('atlas_first_pepite_v1', '1'); } catch(e) {}
       setTimeout(() => {
-        showToast(first ? '✨ Première pépite !' : '✨ Pépite !', first ? 3500 : 2200);
+        showToast(first ? t('toast_pepite_first') : t('toast_pepite'), first ? 3500 : 2200);
         const el = panel && panel.querySelector('.gscore');
         if (el) { el.classList.add('pepite-pulse');
           setTimeout(() => el.classList.remove('pepite-pulse'), 1400); }
@@ -496,12 +499,12 @@
       for (let a = 0; a < query.length; a++) for (let b = a + 1; b < query.length; b++) {
         const v = EPICURE_PAIRING.sim(query[a], query[b]);
         const sc = EPICURE_PAIRING.strengthColor(v);
-        cells.push(`<div class="fcell" title="${PTS[query[a]].fr} × ${PTS[query[b]].fr} · ${sc.label}">
+        cells.push(`<div class="fcell" title="${ingName(query[a])} × ${ingName(query[b])} · ${tSurprise(sc.label)}">
           <span class="fcell-pair">${PTS[query[a]].e}${PTS[query[b]].e}</span>
           <span class="fcell-v" style="background:${sc.color};color:#08100F">${Math.round(v*100)}</span>
         </div>`);
       }
-      detail = `<div class="facc"><div class="lbl">Forces des paires</div><div class="fcells">${cells.join('')}</div></div>`;
+      detail = `<div class="facc"><div class="lbl">${t('score_pairs')}</div><div class="fcells">${cells.join('')}</div></div>`;
     }
     return scoreHeader(G) + detail;
   }
@@ -510,34 +513,34 @@
     if (query.length === 0) { panel.style.display = 'none'; return; }
     panel.style.display = 'block';
     const chips = query.map(i =>
-      `<span class="qchip"><span class="qe">${PTS[i].e}</span>${PTS[i].fr}<button class="qx" data-i="${i}" title="Retirer">&#x2715;</button></span>`
+      `<span class="qchip"><span class="qe">${PTS[i].e}</span>${ingName(i)}<button class="qx" data-i="${i}" title="Retirer">&#x2715;</button></span>`
     ).join('');
-    const title = query.length === 1 ? 'Se marie avec' : `Accords communs · ${query.length} ingrédients`;
+    const panelTitle = query.length === 1 ? t('panel_single') : `${t('panel_multi')} · ${query.length}`;
     const rows = results.map(r => {
-      const t = PTS[r.i];
+      const pt = PTS[r.i];
       const sc = EPICURE_PAIRING.strengthColor(r.dist);
-      const strength = `<span class="rstr" title="${sc.label} · proximité ${Math.round(r.dist * 100)} %" style="background:${sc.color};color:#08100F;border-radius:6px;padding:1px 7px;font-weight:700;font-size:12px;margin-left:6px">${Math.round(r.dist * 100)}</span>`;
+      const strength = `<span class="rstr" title="${tSurprise(sc.label)} · ${Math.round(r.dist * 100)} %" style="background:${sc.color};color:#08100F;border-radius:6px;padding:1px 7px;font-weight:700;font-size:12px;margin-left:6px">${Math.round(r.dist * 100)}</span>`;
       const badge = (query.length > 1
-        ? `<span class="rscore ${r.count === query.length ? 'full' : ''}" title="Accord commun à ${r.count} des ${query.length} ingrédients sélectionnés">${r.count}/${query.length}</span>`
+        ? `<span class="rscore ${r.count === query.length ? 'full' : ''}">${r.count}/${query.length}</span>`
         : `<span class="rank">${String(r.rank + 1).padStart(2, '0')}</span>`) + strength;
-      return `<div class="accord" data-i="${r.i}" title="Ajouter à la recherche">
-        <span class="emoji">${t.e}</span>
-        <span class="txt"><div class="fr">${t.fr}</div><div class="meta">${catFR(t.c)} · ${t.n}</div></span>
+      return `<div class="accord" data-i="${r.i}">
+        <span class="emoji">${pt.e}</span>
+        <span class="txt"><div class="fr">${ingName(r.i)}</div><div class="meta">${catFR(pt.c)} · ${pt.n}</div></span>
         ${badge}
       </div>`;
     }).join('');
-    const empty = `<div class="empty">Aucun accord commun${activeCats.size ? ' dans ces catégories' : ''}.<br/>Retire un ingrédient ou élargis les catégories.</div>`;
+    const empty = `<div class="empty">${t('panel_empty')}${activeCats.size ? t('panel_empty_cat') : ''}.<br/>${t('panel_empty_hint')}</div>`;
     panel.innerHTML = `
       <div class="panel-grabber" id="panelGrabber"></div>
       <div class="ph" id="phHead">
         <div class="x" id="panelX"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></div>
-        <div class="cat-tag"><span class="dot" style="background:var(--accent);color:var(--accent)"></span>Recherche</div>
+        <div class="cat-tag"><span class="dot" style="background:var(--accent);color:var(--accent)"></span>${t('panel_tag')}</div>
         <div class="qchips">${chips}</div>
-        <button class="ph-toggle" id="phToggle" title="Réduire / agrandir"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button>
+        <button class="ph-toggle" id="phToggle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button>
       </div>
       <div class="pb">
         ${query.length >= 2 ? renderForce() : ''}
-        <div class="lbl">${title}${results.length ? ` <span class="n">${results.length}</span>` : ''}</div>
+        <div class="lbl">${panelTitle}${results.length ? ` <span class="n">${results.length}</span>` : ''}</div>
         <div class="accords">${results.length ? rows : empty}</div>
       </div>`;
     panel.classList.remove('expanded');
@@ -561,7 +564,7 @@
     if (pinEl) {
       const names = query.map(i => PTS[i].fr);
       if (EPICURE_GAME.carnetHas(names)) {
-        pinEl.textContent = '✓ Déjà épinglé'; pinEl.disabled = true;
+        pinEl.textContent = t('btn_pin_already'); pinEl.disabled = true;
       }
       pinEl.onclick = (e) => {
         e.stopPropagation();
@@ -570,10 +573,10 @@
         if (res.added) {
           updateCarnetBtn();
           if (window.ATLAS_BADGES) window.ATLAS_BADGES.onCarnetAdd();
-          showToast('Ajouté au carnet ✓');
-          pinEl.textContent = '✓ Épinglé'; pinEl.disabled = true;
+          showToast(t('toast_pin_ok'));
+          pinEl.textContent = t('btn_pin_done'); pinEl.disabled = true;
         } else {
-          showToast('Déjà dans le carnet');
+          showToast(t('toast_pin_dup'));
         }
       };
     }
@@ -694,13 +697,16 @@
   let acMatches = [];
   function rankMatches(q) {
     const out = [];
+    const lang = window.ATLAS_LANG ? window.ATLAS_LANG.getLang() : 'fr';
     for (let i = 0; i < PTS.length; i++) {
       if (query.includes(i)) continue;
-      const n = PTS[i].n.toLowerCase(), fr = PTS[i].fr.toLowerCase();
+      const fr = PTS[i].fr.toLowerCase();
+      const en = PTS[i].n.toLowerCase();
+      const loc = ingName(i).toLowerCase(); // langue active
       let pr = -1;
-      if (fr === q || n === q) pr = 0;
-      else if (fr.startsWith(q) || n.startsWith(q)) pr = 1;
-      else if (fr.indexOf(q) >= 0 || n.indexOf(q) >= 0) pr = 2;
+      if (loc === q || fr === q || en === q) pr = 0;
+      else if (loc.startsWith(q) || fr.startsWith(q) || en.startsWith(q)) pr = 1;
+      else if (loc.indexOf(q) >= 0 || fr.indexOf(q) >= 0 || en.indexOf(q) >= 0) pr = 2;
       if (pr >= 0) out.push({ i, pr });
     }
     out.sort((a, b) => a.pr - b.pr);
@@ -709,7 +715,7 @@
   function renderAC() {
     if (!acMatches.length) { acBox.style.display = 'none'; acBox.innerHTML = ''; return; }
     acBox.innerHTML = acMatches.map((i, k) =>
-      `<div class="ac-item${k === acIdx ? ' sel' : ''}" data-i="${i}"><span class="ac-e">${PTS[i].e}</span><span class="ac-fr">${PTS[i].fr}</span><span class="ac-c">${catFR(PTS[i].c)}</span></div>`
+      `<div class="ac-item${k === acIdx ? ' sel' : ''}" data-i="${i}"><span class="ac-e">${PTS[i].e}</span><span class="ac-fr">${ingName(i)}</span><span class="ac-c">${catFR(PTS[i].c)}</span></div>`
     ).join('');
     acBox.style.display = 'block';
   }
@@ -742,13 +748,14 @@
   sbox.addEventListener('blur', () => setTimeout(hideAC, 120));
   let fullHTML = '', fullKey = '';
   function buildFullList() {
-    const key = query.join(',');
+    const lang = window.ATLAS_LANG ? window.ATLAS_LANG.getLang() : 'fr';
+    const key = query.join(',') + '|' + lang;
     if (key === fullKey && fullHTML) return fullHTML;
     const rows = [];
     for (const i of allSorted) {
       if (query.includes(i)) continue;
-      const t = PTS[i];
-      rows.push(`<div class="ac-item" data-i="${i}"><span class="ac-e">${t.e}</span><span class="ac-fr">${t.fr}</span><span class="ac-c">${catFR(t.c)}</span></div>`);
+      const pt = PTS[i];
+      rows.push(`<div class="ac-item" data-i="${i}"><span class="ac-e">${pt.e}</span><span class="ac-fr">${ingName(i)}</span><span class="ac-c">${catFR(pt.c)}</span></div>`);
     }
     fullHTML = rows.join(''); fullKey = key; return fullHTML;
   }
@@ -814,7 +821,7 @@
     legGrid.innerHTML = catsByCount.map(c =>
       `<div class="leg-item" data-c="${c}">
         <span class="dot" style="background:${colorOf(c)};color:${colorOf(c)}"></span>
-        <span class="nm">${catFR(c)}</span><span class="ct">${counts[c]}</span>
+        <span class="nm" data-cat="${c}">${catFR(c)}</span><span class="ct">${counts[c]}</span>
       </div>`).join('');
     legGrid.querySelectorAll('.leg-item').forEach(el => {
       el.onclick = () => {
@@ -848,7 +855,7 @@
   rs(); buildBg(); buildLegend(); setSpin(true);
   if (isMobile()) legEl.classList.add('collapsed');   // repliée par défaut sur mobile
   document.getElementById('subline').textContent =
-    PTS.length + ' ingrédients · proximité = parenté aromatique';
+    t('subline').replace('{n}', PTS.length);
   tick();
 
   // ── Toast ─────────────────────────────────────────────────────────────
@@ -861,6 +868,38 @@
     _toastTimer = setTimeout(() => _toastEl.classList.remove('show'), duration || 2200);
   };
   window.showToast = showToast; // expose pour les modules externes
+
+  // ── Re-rendu au changement de langue ──────────────────────────────────
+  window.ATLAS_RERENDER = function () {
+    // Mettre à jour le placeholder de la recherche
+    const sboxEl = document.getElementById('search');
+    if (sboxEl) sboxEl.placeholder = t('search_placeholder');
+    // Libellé sw-label dans la barre d'outils
+    const swLabel = document.querySelector('#searchWrapBtn .sw-label');
+    if (swLabel) swLabel.textContent = t('search_label');
+    // Labels des boutons tray
+    const spinSpan = document.querySelector('#spinBtn > span:not([class])');
+    if (spinSpan) spinSpan.textContent = t('btn_spin');
+    const centerSpan = document.querySelector('#centerBtn > span:not([class])');
+    if (centerSpan) centerSpan.textContent = t('btn_center');
+    // Légende : reconstruire les noms de catégories
+    document.querySelectorAll('#legGrid .nm[data-cat]').forEach(el => {
+      el.textContent = catFR(el.dataset.cat);
+    });
+    // Subline
+    const subEl = document.getElementById('subline');
+    if (subEl) subEl.textContent = t('subline').replace('{n}', PTS.length);
+    // Titre carnet
+    const gcnHead = document.getElementById('gcnHead');
+    if (gcnHead) gcnHead.textContent = t('carnet_title');
+    // Re-rendre le panel si actif
+    if (query.length > 0) { computeResults(); renderPanel(); }
+    // Invalider le cache de la liste complète
+    fullHTML = ''; fullKey = '';
+    // Re-render badges dans carnet si ouvert
+    const carnetOv = document.querySelector('.gcn-ov.show');
+    if (carnetOv && window.ATLAS_BADGES) window.ATLAS_BADGES.renderBadgesIn(carnetOv);
+  };
 
   // ── Carnet de découvertes ─────────────────────────────────────────────
   (function initCarnet() {
@@ -892,9 +931,9 @@
     // Modal
     const carnetOv = document.createElement('div');
     carnetOv.className = 'gcn-ov';
-    carnetOv.innerHTML = `<div class="gcn-card" role="dialog" aria-modal="true" aria-label="Carnet de découvertes">
-      <button class="gcn-x" aria-label="Fermer">&#x2715;</button>
-      <div class="gcn-head">Carnet</div>
+    carnetOv.innerHTML = `<div class="gcn-card" role="dialog" aria-modal="true">
+      <button class="gcn-x">&#x2715;</button>
+      <div class="gcn-head" id="gcnHead">${t('carnet_title')}</div>
       <div id="gCarnetList"></div>
     </div>`;
     document.body.appendChild(carnetOv);
@@ -903,7 +942,8 @@
     function openCarnet() {
       const entries = EPICURE_GAME.carnetLoad();
       if (entries.length === 0) {
-        listEl.innerHTML = '<div class="gcn-empty">Aucune découverte encore.<br/>Composez une combinaison notable et épinglez-la !</div>';
+        const msg = t('carnet_empty').replace('\n', '<br/>');
+        listEl.innerHTML = `<div class="gcn-empty">${msg}</div>`;
       } else {
         listEl.innerHTML = entries.map((e, k) => {
           const st = '★'.repeat(e.stars) + '☆'.repeat(3 - e.stars);
@@ -1244,6 +1284,69 @@
 
     // API publique : tuto peut ouvrir/verrouiller la barre
     window.ATLAS_CTRL = { setOpen: v => setOpen(v), lock: v => { locked = v; } };
+
+    // ── Sélecteur de langue ───────────────────────────────────────────────
+    if (window.ATLAS_LANG) {
+      (function () {
+        const LANG = window.ATLAS_LANG;
+        // Bouton globe dans le tray
+        const langBtn = document.createElement('button');
+        langBtn.id = 'langBtn'; langBtn.className = 'tool-btn tool-icon';
+        langBtn.title = t('btn_lang_title');
+        langBtn.setAttribute('aria-label', t('btn_lang_title'));
+        langBtn.innerHTML = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>`;
+        tray.appendChild(langBtn);
+
+        // Menu dropdown langues
+        const menu = document.createElement('div');
+        menu.id = 'langMenu';
+        (function(){ const s = document.createElement('style');
+          s.textContent = `
+          #langMenu { position:fixed; z-index:9500; background:rgba(15,24,22,.97);
+            border:1px solid var(--line-strong); border-radius:10px;
+            box-shadow:0 12px 30px rgba(0,0,0,.5); backdrop-filter:blur(10px);
+            padding:6px; display:none; flex-direction:column; gap:2px; min-width:110px; }
+          #langMenu.show { display:flex; }
+          .lang-opt { display:flex; align-items:center; gap:8px; padding:7px 10px;
+            border-radius:7px; cursor:pointer; font-family:var(--mono); font-size:12px;
+            color:var(--ink-2); transition:background .12s; border:none; background:transparent;
+            text-align:left; width:100%; }
+          .lang-opt:hover { background:var(--surface-2); color:var(--ink); }
+          .lang-opt.active { color:var(--signature); }
+          .lang-flag { font-size:15px; width:20px; }
+          `;
+          document.head.appendChild(s); })();
+
+        const FLAGS = { fr:'🇫🇷', en:'🇬🇧', de:'🇩🇪', it:'🇮🇹', es:'🇪🇸' };
+        const LABELS = { fr:'Français', en:'English', de:'Deutsch', it:'Italiano', es:'Español' };
+
+        function buildMenu() {
+          menu.innerHTML = LANG.SUPPORTED.map(l =>
+            `<button class="lang-opt${l === LANG.getLang() ? ' active' : ''}" data-l="${l}">
+               <span class="lang-flag">${FLAGS[l]}</span>${LABELS[l]}
+             </button>`
+          ).join('');
+          menu.querySelectorAll('.lang-opt').forEach(btn => {
+            btn.onclick = (e) => { e.stopPropagation(); LANG.setLang(btn.dataset.l); closeMenu(); };
+          });
+        }
+
+        let menuOpen = false;
+        function openMenu() {
+          buildMenu();
+          const r = langBtn.getBoundingClientRect();
+          menu.style.top = (r.bottom + 6) + 'px';
+          menu.style.right = (window.innerWidth - r.right) + 'px';
+          menu.style.left = 'auto';
+          menu.classList.add('show'); menuOpen = true;
+        }
+        function closeMenu() { menu.classList.remove('show'); menuOpen = false; }
+
+        langBtn.onclick = (e) => { e.stopPropagation(); menuOpen ? closeMenu() : openMenu(); };
+        document.addEventListener('click', () => { if (menuOpen) closeMenu(); });
+        document.body.appendChild(menu);
+      })();
+    }
   })();
 
   // ── Fiche d'accord ────────────────────────────────────────────────────
@@ -1264,40 +1367,41 @@
     const stars  = '★'.repeat(F.V.stars) + '☆'.repeat(3 - F.V.stars);
     const ingHtml = F.ingredients.map(ig => `<span class="af-ingred">${ig.e} ${ig.fr}</span>`).join('');
     const boldHtml = F.boldText
-      ? `<div class="af-section"><div class="af-sh">✨ Lien surprenant</div><p class="af-bold">${F.boldText}</p></div>`
+      ? `<div class="af-section"><div class="af-sh">${t('fiche_bold')}</div><p class="af-bold">${F.boldText}</p></div>`
       : '';
     const rolesHtml = F.ingredients.map(ig =>
       `<div class="af-role"><span class="af-rname">${ig.e} ${ig.fr}</span><span class="af-rval">→ ${ig.role}</span></div>`
     ).join('');
-    const tipsHtml = F.usages.map(t => `<div class="af-tip">${t}</div>`).join('');
+    const tipsHtml = F.usages.map(u => `<div class="af-tip">${u}</div>`).join('');
+    const nIng = F.ingredients.length;
     ficheOv.querySelector('#afContent').innerHTML = `
-      <div class="af-h1">Fiche d'accord</div>
-      <div class="af-sub">${F.ingredients.length} ingrédient${F.ingredients.length > 1 ? 's' : ''}</div>
+      <div class="af-h1">${t('fiche_title')}</div>
+      <div class="af-sub">${nIng} ${nIng > 1 ? t('fiche_ingredients') : t('fiche_ingredient')}</div>
       <div class="af-ingreds">${ingHtml}</div>
       <div class="af-section">
-        <div class="af-sh">Verdict</div>
-        <div class="af-verdict"><span class="af-stars">${stars}</span><span class="af-vtitle">${F.V.title}</span></div>
-        <div class="af-scores">Harmonie ${F.G.harmony} · Surprise ${F.G.surprise}</div>
+        <div class="af-sh">${t('fiche_verdict')}</div>
+        <div class="af-verdict"><span class="af-stars">${stars}</span><span class="af-vtitle">${tVerdict(F.V.title)}</span></div>
+        <div class="af-scores">${t('score_harmony')} ${F.G.harmony} · ${t('score_surprise')} ${F.G.surprise}</div>
       </div>
       ${boldHtml}
       <div class="af-section">
-        <div class="af-sh">Rôles</div>
+        <div class="af-sh">${t('fiche_roles')}</div>
         <div class="af-roles">${rolesHtml}</div>
       </div>
       <div class="af-section">
-        <div class="af-sh">Pistes d'usage</div>
+        <div class="af-sh">${t('fiche_uses')}</div>
         <div class="af-tips">${tipsHtml}</div>
       </div>
       <div class="af-foot">
-        <button class="af-share" id="afShare">Partager ↗</button>
-        <button class="af-close" id="afClose">Fermer</button>
+        <button class="af-share" id="afShare">${t('fiche_share')}</button>
+        <button class="af-close" id="afClose">${t('fiche_close')}</button>
       </div>`;
     ficheOv.querySelector('#afShare').onclick = function () {
       const hash = '#plat=' + sel.join(',');
       history.replaceState(null, '', hash);
       navigator.clipboard.writeText(location.href).catch(() => {});
-      this.textContent = 'Lien copié ✓';
-      setTimeout(() => { this.textContent = 'Partager ↗'; }, 2200);
+      this.textContent = t('challenge_copied');
+      setTimeout(() => { this.textContent = t('fiche_share'); }, 2200);
     };
     ficheOv.querySelector('#afClose').onclick = closeFiche;
     ficheOv.style.display = 'flex';

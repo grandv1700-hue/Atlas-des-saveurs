@@ -73,33 +73,39 @@
     return cats.size;
   }
 
-  // ── Définitions des badges ────────────────────────────────────────────
+  // ── Définitions des badges (titres/desc via t()) ─────────────────────
   const BADGES = [
-    { id: 'first_pepite', icon: '✨', title: 'Première pépite',
-      desc: 'Découvrir ta 1re pépite aromatique',
+    { id: 'first_pepite', icon: '✨',
+      get title() { return (window.t||((k)=>k))('badge_first_pepite_title'); },
+      get desc()  { return (window.t||((k)=>k))('badge_first_pepite_desc'); },
       progress: () => ({ cur: localStorage.getItem('atlas_first_pepite_v1') ? 1 : 0, max: 1 }) },
 
-    { id: 'explorateur', icon: '🗺️', title: 'Explorateur',
-      desc: '25 combinaisons différentes testées',
+    { id: 'explorateur', icon: '🗺️',
+      get title() { return (window.t||((k)=>k))('badge_explorateur_title'); },
+      get desc()  { return (window.t||((k)=>k))('badge_explorateur_desc'); },
       progress: () => ({ cur: Math.min(getExploredCount(), 25), max: 25 }) },
 
-    { id: 'collectionneur', icon: '📌', title: 'Collectionneur',
-      desc: '10 découvertes épinglées au carnet',
+    { id: 'collectionneur', icon: '📌',
+      get title() { return (window.t||((k)=>k))('badge_collectionneur_title'); },
+      get desc()  { return (window.t||((k)=>k))('badge_collectionneur_desc'); },
       progress: () => {
         const n = window.EPICURE_GAME ? EPICURE_GAME.carnetCount() : 0;
         return { cur: Math.min(n, 10), max: 10 };
       } },
 
-    { id: 'audacieux', icon: '⚡', title: 'Audacieux',
-      desc: 'Surprise ≥ 60 sur une combinaison',
+    { id: 'audacieux', icon: '⚡',
+      get title() { return (window.t||((k)=>k))('badge_audacieux_title'); },
+      get desc()  { return (window.t||((k)=>k))('badge_audacieux_desc'); },
       progress: () => ({ cur: localStorage.getItem(KEY_AUDACIEUX) ? 1 : 0, max: 1 }) },
 
-    { id: 'tour_terroir', icon: '🌍', title: 'Tour du terroir',
-      desc: 'Pépites dans 6 catégories différentes',
+    { id: 'tour_terroir', icon: '🌍',
+      get title() { return (window.t||((k)=>k))('badge_tour_title'); },
+      get desc()  { return (window.t||((k)=>k))('badge_tour_desc'); },
       progress: () => ({ cur: Math.min(getPepiteCatCount(), 6), max: 6 }) },
 
-    { id: 'serie', icon: '🔥', title: 'Série',
-      desc: '3 défis du jour d\'affilée',
+    { id: 'serie', icon: '🔥',
+      get title() { return (window.t||((k)=>k))('badge_serie_title'); },
+      get desc()  { return (window.t||((k)=>k))('badge_serie_desc'); },
       progress: () => {
         const sk = window.EPICURE_GAME ? EPICURE_GAME.streakLoad() : { count: 0 };
         return { cur: Math.min(sk.count, 3), max: 3 };
@@ -116,7 +122,8 @@
         const title = b.title;
         setTimeout(() => {
           if (typeof window.showToast === 'function') {
-            window.showToast('🏅 Badge débloqué : ' + title, 3500);
+            const T = window.t || ((k) => k);
+            window.showToast(T('toast_badge') + ' ' + title, 3500);
           }
         }, 200);
       }
@@ -157,7 +164,7 @@
     const unlocked = loadUnlocked();
     el.className = 'gcn-badges-wrap';
     el.innerHTML = `
-      <div class="gcn-badges-head">Badges</div>
+      <div class="gcn-badges-head">${(window.t||((k)=>k))('carnet_badges')}</div>
       <div class="gcn-badges-list">
         ${BADGES.map(b => {
           const on = !!unlocked[b.id];

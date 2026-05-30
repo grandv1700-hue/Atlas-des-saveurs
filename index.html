@@ -782,24 +782,31 @@
     <img id="ldLogo" class="ld-logo" alt="La Réserve de Val">
     <div class="ld-title">Atlas des Saveurs</div>
     <div class="ld-spin"></div>
-    <div class="ld-msg">Chargement de la carte…</div>
+    <div class="ld-msg" id="ldMsg">Chargement de la carte…</div>
   </div>
   <script>
-    /* Logo LRV version claire : fetch + remplacement couleurs sombres → blanc */
+    /* Logo LRV version claire + message loader traduit dès que i18n est prêt */
     fetch('logo-lrv.svg').then(function(r){return r.text();}).then(function(svg){
       svg=svg.replace(/fill:\s*#1d1d1b/gi,'fill:#ffffff');
       var b=new Blob([svg],{type:'image/svg+xml'});
       var img=document.getElementById('ldLogo');
       if(img) img.src=URL.createObjectURL(b);
     }).catch(function(){});
+    /* Mettre à jour le message quand i18n est disponible (chargé plus tard) */
+    window.addEventListener('DOMContentLoaded', function() {
+      var msg = document.getElementById('ldMsg');
+      if (msg && window.t) msg.textContent = window.t('loader_msg');
+    });
   </script>
 
   <script src="epicure-data.js"></script>
   <script src="epicure-embeddings.js"></script>
   <script src="pairing.js"></script>
   <script src="epicure-degree.js"></script>
-<script src="game.js"></script>
-<script src="atlas.js"></script>
+  <script src="game.js"></script>
+  <script src="i18n.js"></script>
+  <script src="epicure-names.js"></script>
+  <script src="atlas.js"></script>
   <script src="atlas-intro.js"></script>
   <script src="atlas-tuto.js"></script>
   <script src="atlas-badges.js"></script>

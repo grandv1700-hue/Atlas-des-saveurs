@@ -130,7 +130,7 @@
     ctx.font = '500 20px "JetBrains Mono", monospace';
     ctx.fillStyle = 'rgba(232,185,78,.7)';
     ctx.textAlign = 'center';
-    ctx.fillText('LA RÉSERVE DE VAL  ·  ATLAS DES SAVEURS', CX, y);
+    ctx.fillText((window.t ? window.t('share_card_header') : 'LA RÉSERVE DE VAL  ·  ATLAS DES SAVEURS'), CX, y);
     y += 46;
 
     // Ligne de séparation haute
@@ -186,7 +186,7 @@
 
     // Badge Pépite
     if (G.pepite) {
-      const pepText = '✨  PÉPITE';
+      const pepText = window.t ? window.t('share_card_pepite') : '✨  PÉPITE';
       ctx.font = '700 18px "JetBrains Mono", monospace';
       const tw = ctx.measureText(pepText).width;
       const bx = CX - tw / 2 - 18;
@@ -201,9 +201,10 @@
     y += 16;
 
     // ── Barres de scores ──────────────────────────────────────────────
-    scoreBar(ctx, 'HARMONIE', G.harmony, G.harmonyVerdict.color, BX, y, BW);
+    const TT = window.t || ((k) => k);
+    scoreBar(ctx, TT('share_card_harmony'), G.harmony, G.harmonyVerdict.color, BX, y, BW);
     y += 58;
-    scoreBar(ctx, 'SURPRISE', G.surprise, G.surpriseVerdict.color, BX, y, BW);
+    scoreBar(ctx, TT('share_card_surprise'), G.surprise, G.surpriseVerdict.color, BX, y, BW);
     y += 58;
 
     // ── Pied de page ──────────────────────────────────────────────────
@@ -236,7 +237,8 @@
     if (!G || !query || query.length < 1) return;
 
     // Feedback immédiat
-    if (typeof window.showToast === 'function') window.showToast('Génération de la carte…', 1800);
+    const Ts = window.t || ((k) => k);
+    if (typeof window.showToast === 'function') window.showToast(Ts('toast_share_gen'), 1800);
 
     const canvas = await generateCard(G, query);
     if (!canvas) return;
@@ -251,8 +253,8 @@
         if (navigator.canShare({ files: [file] })) {
           try {
             await navigator.share({
-              title: 'Atlas des Saveurs — Ma découverte',
-              text: 'Découvrez cette combinaison sur l\'Atlas des Saveurs',
+              title: (window.t ? window.t('share_title') : 'Atlas des Saveurs — Ma découverte'),
+              text: (window.t ? window.t('share_text') : 'Découvrez cette combinaison sur l\'Atlas des Saveurs'),
               url: window.location.href,
               files: [file],
             });
