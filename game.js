@@ -84,6 +84,10 @@ window.EPICURE_GAME = (function () {
     return { added: true };
   }
   function carnetCount() { return carnetLoad().length; }
+  function carnetRemove(names) {
+    const key = carnetEntryKey(names);
+    carnetSave(carnetLoad().filter(e => carnetEntryKey(e.names) !== key));
+  }
 
   // ── Fiche d'accord (données statiques, sans IA) ────────────────────────
   const CAT_FR_G = {
@@ -197,6 +201,6 @@ window.EPICURE_GAME = (function () {
   }
 
   return { compositionScore, chefVerdict, pairSurprise, surpriseVerdict,
-           carnetAdd, carnetHas, carnetCount, carnetLoad, platFiche,
+           carnetAdd, carnetHas, carnetCount, carnetLoad, carnetRemove, platFiche,
            dailyDateStr, dailyIngredientIdx, dailyLoad, dailySubmit, dailyShareText, streakLoad };
 })();

@@ -349,6 +349,10 @@
       overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     .gcn-scores { font-family:var(--mono); font-size:10px; color:var(--ink-4);
       flex-shrink:0; white-space:nowrap; }
+    .gcn-del { background:none; border:none; color:#5a7a6f; font-size:14px;
+      cursor:pointer; padding:2px 5px; line-height:1; flex-shrink:0;
+      transition:color .15s; }
+    .gcn-del:hover { color:#DCDDB2; }
     .gfiche-btn { display:block; width:100%; margin-top:8px; padding:7px 12px;
       border:1px solid var(--line); border-radius:8px; background:transparent;
       color:var(--ink-3); font-family:var(--mono); font-size:10px; font-weight:600;
@@ -949,32 +953,46 @@
     document.body.appendChild(carnetOv);
     const listEl = carnetOv.querySelector('#gCarnetList');
 
-    function openCarnet() {
+    function renderCarnetList() {
       const entries = EPICURE_GAME.carnetLoad();
       if (entries.length === 0) {
         const msg = t('carnet_empty').replace('\n', '<br/>');
         listEl.innerHTML = `<div class="gcn-empty">${msg}</div>`;
-      } else {
-        listEl.innerHTML = entries.map((e, k) => {
-          const st = '★'.repeat(e.stars) + '☆'.repeat(3 - e.stars);
-          return `<div class="gcn-entry" data-k="${k}">
-            <span class="gcn-stars">${st}</span>
-            <span class="gcn-names">${e.names.join(' · ')}</span>
-            <span class="gcn-scores">♥${e.harmony} ✨${e.surprise}</span>
-          </div>`;
-        }).join('');
-        listEl.querySelectorAll('.gcn-entry').forEach(el => {
-          el.onclick = () => {
-            const e = entries[+el.dataset.k];
-            clearQuery();
-            e.names.forEach(fr => {
-              const idx = PTS.findIndex(p => p.fr === fr);
-              if (idx >= 0) addToQuery(idx);
-            });
-            closeCarnet();
-          };
-        });
+        return;
       }
+      listEl.innerHTML = entries.map((e, k) => {
+        const st = '★'.repeat(e.stars) + '☆'.repeat(3 - e.stars);
+        return `<div class="gcn-entry" data-k="${k}">
+          <span class="gcn-stars">${st}</span>
+          <span class="gcn-names">${e.names.join(' · ')}</span>
+          <span class="gcn-scores">♥${e.harmony} ✨${e.surprise}</span>
+          <button class="gcn-del" data-k="${k}" title="${t('btn_remove')}" aria-label="${t('btn_remove')}">&#x2715;</button>
+        </div>`;
+      }).join('');
+      listEl.querySelectorAll('.gcn-entry').forEach(el => {
+        el.onclick = () => {
+          const e = entries[+el.dataset.k];
+          clearQuery();
+          e.names.forEach(fr => {
+            const idx = PTS.findIndex(p => p.fr === fr);
+            if (idx >= 0) addToQuery(idx);
+          });
+          closeCarnet();
+        };
+      });
+      listEl.querySelectorAll('.gcn-del').forEach(btn => {
+        btn.onclick = (ev) => {
+          ev.stopPropagation();
+          EPICURE_GAME.carnetRemove(entries[+btn.dataset.k].names);
+          updateCarnetBtn();
+          renderCarnetList();
+          if (window.ATLAS_BADGES) window.ATLAS_BADGES.renderBadgesIn(carnetOv);
+        };
+      });
+    }
+
+    function openCarnet() {
+      renderCarnetList();
       if (window.ATLAS_BADGES) window.ATLAS_BADGES.renderBadgesIn(carnetOv);
       carnetOv.style.display = 'flex';
       requestAnimationFrame(() => carnetOv.classList.add('show'));
