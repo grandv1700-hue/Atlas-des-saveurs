@@ -1025,6 +1025,34 @@
     updateChallengeBtn();
   })();
 
+  // ── Barre d'outils repliable ──────────────────────────────────────────
+  (function initToolbarToggle() {
+    (function(){ const s = document.createElement('style'); s.textContent = `
+    /* Replié : on cache les libellés texte (spans sans classe = labels) */
+    body.tb-collapsed .tool-btn > span:not([class]) { display:none !important; }
+    body.tb-collapsed .tool-btn:not(.tool-icon) { padding:0 11px !important; }
+    #toolbarToggle svg { transition:transform .25s; }
+    body.tb-collapsed #toolbarToggle svg { transform:rotate(180deg); }
+    `; document.head.appendChild(s); })();
+
+    const btn = document.createElement('button');
+    btn.className = 'tool-btn tool-icon'; btn.id = 'toolbarToggle';
+    btn.title = 'Réduire / déplier la barre';
+    btn.innerHTML = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>`;
+    const ref = document.getElementById('challengeBtn');
+    if (ref) ref.insertAdjacentElement('afterend', btn);
+
+    const KEY = 'atlas_toolbar_v1';
+    function applyCollapse(on) {
+      document.body.classList.toggle('tb-collapsed', on);
+      try { localStorage.setItem(KEY, on ? '1' : '0'); } catch(e) {}
+    }
+    btn.onclick = () => applyCollapse(!document.body.classList.contains('tb-collapsed'));
+    let init = false;
+    try { init = localStorage.getItem(KEY) === '1'; } catch(e) {}
+    applyCollapse(init);
+  })();
+
   // ── Fiche d'accord ────────────────────────────────────────────────────
   function openFiche(sel) {
     if (!ficheOv) {
