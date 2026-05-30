@@ -52,29 +52,62 @@
   `;
   document.head.appendChild(st);
 
+  // ── Duos curatés pour la démo (bons accords, noms FR exacts dans PTS) ──
+  const DEMO_PAIRS = [
+    ['chocolat', 'orange'],
+    ['tomate', 'basilic'],
+    ['saumon', 'citron'],
+    ['ail', 'romarin'],
+    ['cannelle', 'pomme'],
+  ];
+
+  // Garantit N ingrédients sélectionnés. Si insuffisant, efface et pose un duo démo.
+  function ensureN(n) {
+    const chips = document.querySelectorAll('#panel .qchip').length;
+    if (chips >= n) return;
+    const PTS = window.EPICURE && window.EPICURE.PTS;
+    const sel = window.select;
+    if (!PTS || !sel) return;
+    if (window.clearSel) window.clearSel();
+    for (const pair of DEMO_PAIRS) {
+      const idx = pair
+        .map(nm => PTS.findIndex(p => p.fr.toLowerCase() === nm))
+        .filter(i => i >= 0);
+      if (idx.length >= n) { idx.slice(0, n).forEach(i => sel(i)); return; }
+    }
+  }
+
   // ── Étapes (tout manuel — "Suivant" ou "Passer") ──────────────────────
+  // onAdvance : appelé AVANT d'afficher l'étape SUIVANTE (garantit l'état nécessaire).
   const STEPS = [
     { title: 'Rechercher un ingrédient',
       body: 'Tape un nom dans la barre de recherche, ou clique directement un point du nuage pour l\'ajouter à ta sélection.',
-      targetId: 'search' },
+      targetId: 'search',
+      onAdvance: () => ensureN(1) },   // avant "Composer" : au moins 1 sélectionné
     { title: 'Composer un plat',
       body: 'Ajoutes-en un deuxième — le bloc "Score du plat" (Harmonie + Surprise) apparaît dans le panneau de droite.',
-      targetId: 'search' },
+      targetId: 'search',
+      onAdvance: () => ensureN(2) },   // avant "Filtrer" : duo entier (score visible)
     { title: 'Filtrer par catégorie',
       body: 'Clique un item dans la légende (bas gauche) pour n\'afficher qu\'une famille d\'ingrédients et lire leurs noms sur la carte.',
-      targetId: 'leg' },
+      targetId: 'leg',
+      onAdvance: null },
     { title: 'Rotation automatique',
       body: 'Ce bouton lance ou arrête la rotation 3D. Utile pour explorer l\'ensemble du nuage.',
-      targetId: 'spinBtn' },
+      targetId: 'spinBtn',
+      onAdvance: null },
     { title: 'Centrer la vue',
       body: 'Recadre la carte sur les ingrédients de ta sélection courante.',
-      targetId: 'centerBtn' },
+      targetId: 'centerBtn',
+      onAdvance: null },
     { title: 'Taille du texte',
       body: 'Ajuste la taille des labels affichés sur la carte — pratique sur grand écran ou mobile.',
-      targetId: 'textBtn' },
+      targetId: 'textBtn',
+      onAdvance: null },
     { title: 'Carnet & pépites',
       body: 'Épingle tes meilleurs accords (★★+) au Carnet pour y revenir. Les pépites sont des accords audacieux qui tiennent aromatiquement.',
-      targetId: 'gCarnetBtn' },
+      targetId: 'gCarnetBtn',
+      onAdvance: null },
   ];
 
   // ── Bubble DOM ────────────────────────────────────────────────────────
@@ -116,6 +149,10 @@
   }
 
   function advance() {
+    if (step >= 0) {
+      const fn = STEPS[step].onAdvance;
+      if (fn) fn();
+    }
     if (step >= 0 && step < STEPS.length - 1) showStep(step + 1);
     else finish();
   }
