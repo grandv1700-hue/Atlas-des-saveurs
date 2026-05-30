@@ -410,6 +410,31 @@
     document.head.appendChild(s);
   })();
 
+  // ── CSS mobile (légende bottom-sheet + grabber panel) ──────────────────
+  (function(){ const s = document.createElement('style'); s.textContent = `
+  /* Grabber caché sur desktop */
+  .panel-grabber { display:none; }
+  @media (max-width:640px) {
+    /* Légende : bottom-sheet pleine largeur, no overlap */
+    #leg { max-width:none !important; left:0 !important; right:0 !important;
+      bottom:0 !important; padding:0 16px 0 !important;
+      border-radius:16px 16px 0 0 !important; z-index:8 !important; }
+    #leg .leg-head { padding:10px 0 8px; cursor:pointer; position:relative; }
+    #leg .leg-head::before { content:''; display:block; width:32px; height:3px;
+      background:var(--line-strong,rgba(255,255,255,.15)); border-radius:2px;
+      margin:0 auto 8px; }
+    #leg:not(.collapsed) { max-height:50vh; overflow-y:auto;
+      padding-bottom:max(14px,env(safe-area-inset-bottom)) !important;
+      box-shadow:0 -12px 40px rgba(0,0,0,.7); }
+    .leg-grid { grid-template-columns:repeat(2,1fr) !important; gap:3px !important; }
+    /* Grabber panel de résultats */
+    .panel-grabber { display:flex; justify-content:center;
+      padding:10px 0 4px; cursor:ns-resize; touch-action:none; }
+    .panel-grabber::after { content:''; display:block; width:36px; height:4px;
+      background:var(--line-strong,rgba(255,255,255,.2)); border-radius:2px; }
+  }
+  `; document.head.appendChild(s); })();
+
   const pctOf = (v) => Math.round(v * 100);
   // Largeur de jauge : on etale 0-0.5 (plage utile des cosinus Epicure) sur 0-100 %.
   const barW = (v) => Math.max(3, Math.min(100, (v / 0.5) * 100));
@@ -501,6 +526,7 @@
     }).join('');
     const empty = `<div class="empty">Aucun accord commun${activeCats.size ? ' dans ces catégories' : ''}.<br/>Retire un ingrédient ou élargis les catégories.</div>`;
     panel.innerHTML = `
+      <div class="panel-grabber" id="panelGrabber"></div>
       <div class="ph" id="phHead">
         <div class="x" id="panelX"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></div>
         <div class="cat-tag"><span class="dot" style="background:var(--accent);color:var(--accent)"></span>Recherche</div>
@@ -1045,6 +1071,36 @@
       }
     };
     updateChallengeBtn();
+  })();
+
+  // ── Panel mobile : drag pour régler la hauteur ────────────────────────
+  (function initPanelDrag() {
+    const PANEL_H_KEY = 'atlas_panel_h_v1';
+    let dStartY = -1, dStartH = -1;
+    panel.addEventListener('touchstart', (e) => {
+      if (!isMobile() || !e.target.closest('.panel-grabber')) return;
+      dStartY = e.touches[0].clientY;
+      dStartH = panel.getBoundingClientRect().height;
+      e.preventDefault();
+    }, { passive: false });
+    document.addEventListener('touchmove', (e) => {
+      if (dStartY < 0) return;
+      const dy = dStartY - e.touches[0].clientY;
+      const newH = Math.max(80, Math.min(window.innerHeight - 56, dStartH + dy));
+      panel.style.maxHeight = newH + 'px';
+      e.preventDefault();
+    }, { passive: false });
+    document.addEventListener('touchend', () => {
+      if (dStartY < 0) return;
+      const h = Math.round(panel.getBoundingClientRect().height / window.innerHeight * 100);
+      dStartY = -1;
+      try { localStorage.setItem(PANEL_H_KEY, h); } catch(ex) {}
+    });
+    // Restaurer hauteur mémorisée
+    try {
+      const h = parseInt(localStorage.getItem(PANEL_H_KEY));
+      if (h >= 15 && h <= 95) panel.style.maxHeight = h + 'vh';
+    } catch(ex) {}
   })();
 
   // ── Barre d'outils repliable ──────────────────────────────────────────

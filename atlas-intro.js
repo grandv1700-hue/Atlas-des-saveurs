@@ -35,6 +35,9 @@
     background:#C3453C;color:#fff;font:700 15px/1 sans-serif;cursor:pointer;transition:background .15s}
   .ai-go:hover{background:#d8554b}
   .ai-x{position:absolute;top:14px;right:14px;background:none;border:none;color:#7f9a8f;font-size:20px;cursor:pointer;line-height:1}
+  @media (max-height:680px),(max-width:640px){
+    .ai-card{max-height:85svh;overflow-y:auto;-webkit-overflow-scrolling:touch}
+  }
   `;
   const st = document.createElement("style");
   st.textContent = css;
