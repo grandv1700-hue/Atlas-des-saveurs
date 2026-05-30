@@ -17,7 +17,7 @@ jobs:
           username: ${{ secrets.FTP_USER }}
           password: ${{ secrets.FTP_PASS }}
           local-dir: ./
-          server-dir: /sites/lareservedeval.ch/atlas/
+          server-dir: /sites/lareservedeval.ch/
           exclude: |
             **/.git*
             **/.git*/**
