@@ -173,6 +173,62 @@ window.EPICURE_GAME = (function () {
     return { G, V, ingredients, boldText, usages: buildUsages(cats) };
   }
 
+  // ── Défi du jour ──────────────────────────────────────────────────────
+  function dailyDateStr() {
+    const d = new Date();
+    return `${d.getUTCFullYear()}${String(d.getUTCMonth()+1).padStart(2,'0')}${String(d.getUTCDate()).padStart(2,'0')}`;
+  }
+  function dailySeed(ds) {
+    let h = 2166136261;
+    for (let i = 0; i < ds.length; i++) { h ^= ds.charCodeAt(i); h = Math.imul(h, 16777619); }
+    return h >>> 0;
+  }
+  function dailyIngredientIdx(ds) { return dailySeed(ds) % PTS.length; }
+  const DAILY_PFX = 'atlas_daily_v1_', STREAK_KEY2 = 'atlas_streak_v1';
+  function dailyLoad(ds) { try { return JSON.parse(localStorage.getItem(DAILY_PFX+ds))||null; } catch(e) { return null; } }
+  function _dailySave(ds, st) { try { localStorage.setItem(DAILY_PFX+ds, JSON.stringify(st)); } catch(e) {} }
+  function streakLoad() { try { return JSON.parse(localStorage.getItem(STREAK_KEY2))||{lastDate:'',count:0}; } catch(e) { return {lastDate:'',count:0}; } }
+  function streakUpdate(ds) {
+    const s = streakLoad();
+    if (s.lastDate === ds) return s.count;
+    const y = +ds.slice(0,4), mo = +ds.slice(4,6)-1, d2 = +ds.slice(6,8);
+    const prev = new Date(Date.UTC(y, mo, d2) - 86400000);
+    const ps = `${prev.getUTCFullYear()}${String(prev.getUTCMonth()+1).padStart(2,'0')}${String(prev.getUTCDate()).padStart(2,'0')}`;
+    const count = s.lastDate === ps ? s.count + 1 : 1;
+    try { localStorage.setItem(STREAK_KEY2, JSON.stringify({lastDate:ds, count})); } catch(e) {}
+    return count;
+  }
+  function dailySubmit(ds, sel) {
+    const G = compositionScore(sel); if (!G) return null;
+    const V = chefVerdict(G); const combined = G.harmony + G.surprise;
+    const st = dailyLoad(ds) || {tries:0,bestScore:-1,bestHarmony:0,bestSurprise:0,bestStars:0,bestTitle:'',bestPairs:[],completed:false};
+    const wasCompleted = st.completed;
+    st.tries++;
+    if (combined > st.bestScore) {
+      st.bestScore = combined; st.bestHarmony = G.harmony; st.bestSurprise = G.surprise;
+      st.bestStars = V.stars; st.bestTitle = V.title;
+      const q = [...new Set(sel)].filter(i => i >= 0);
+      st.bestPairs = [];
+      for (let a = 0; a < q.length; a++) for (let b = a+1; b < q.length; b++) {
+        const v = PR.sim(q[a], q[b]);
+        st.bestPairs.push(v >= 0.40 ? 3 : v >= 0.32 ? 2 : v >= 0.25 ? 1 : 0);
+      }
+    }
+    st.completed = true;
+    if (!wasCompleted) streakUpdate(ds);
+    _dailySave(ds, st);
+    return st;
+  }
+  function dailyShareText(ds, st) {
+    const date = `${ds.slice(6,8)}.${ds.slice(4,6)}.${ds.slice(0,4)}`;
+    const stars = '★'.repeat(st.bestStars) + '☆'.repeat(3-st.bestStars);
+    const grid = (st.bestPairs||[]).map(v => v>=3?'🟩':v>=2?'🟨':v>=1?'🟧':'⬜').join('');
+    const sk = streakLoad();
+    const streakLine = sk.count >= 2 ? `\n🔥 ${sk.count} jours consécutifs` : '';
+    return `Atlas des Saveurs 🍽️ — Défi du ${date}\n${stars} ${st.bestTitle} · ${st.bestScore} pts\n${grid}${streakLine}\n\nlareservedeval.ch/atlas`;
+  }
+
   return { compositionScore, chefVerdict, pairSurprise, surpriseVerdict,
-           carnetAdd, carnetHas, carnetCount, carnetLoad, platFiche };
+           carnetAdd, carnetHas, carnetCount, carnetLoad, platFiche,
+           dailyDateStr, dailyIngredientIdx, dailyLoad, dailySubmit, dailyShareText, streakLoad };
 })();

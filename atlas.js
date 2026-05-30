@@ -57,7 +57,7 @@
   let ax = 0.42, ay = 0.45, zoom = 1, autorot = true, centered = false;
   let query = [];     // indices des ingrédients de la requête
   let results = [];   // résultats classés : [{ i, count, dist, rank }]
-  let updateCarnetBtn = () => {}, showToast = () => {};
+  let updateCarnetBtn = () => {}, showToast = () => {}, updateChallengeBtn = () => {};
   let acIdx = -1;     // index surligné dans la liste de suggestions (-1 = aucun)
   let ficheOv = null; // modale fiche d'accord (créée à la demande)
   let textScale = (() => { const v = parseFloat(localStorage.getItem('atlas_textscale')); return (v >= 1 && v <= 2) ? v : 1; })();
@@ -515,7 +515,17 @@
     }
   }
 
-  function afterQueryChange() { computeResults(); renderPanel(); refreshCenterBtn(); draw(); }
+  function afterQueryChange() {
+    computeResults(); renderPanel(); refreshCenterBtn(); draw();
+    if (typeof EPICURE_GAME !== 'undefined') {
+      const ds = EPICURE_GAME.dailyDateStr();
+      const imp = EPICURE_GAME.dailyIngredientIdx(ds);
+      if (query.includes(imp) && query.length >= 2) {
+        EPICURE_GAME.dailySubmit(ds, [...query]);
+        updateChallengeBtn();
+      }
+    }
+  }
   function addToQuery(i) {
     if (!query.includes(i)) { query.push(i); autorot = false; setSpin(false); }
     afterQueryChange();
@@ -870,6 +880,141 @@
       if (badge) { badge.textContent = n || ''; badge.classList.toggle('on', n > 0); }
     };
     updateCarnetBtn();
+  })();
+
+  // ── Défi du jour ──────────────────────────────────────────────────────
+  (function initChallenge() {
+    (function(){ const s = document.createElement('style'); s.textContent = `
+    .ch-ov { position:fixed;inset:0;z-index:10300;display:none;align-items:center;
+      justify-content:center;background:rgba(4,8,7,.72);
+      -webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);
+      opacity:0;transition:opacity .3s ease;padding:16px; }
+    .ch-ov.show { opacity:1; }
+    .ch-card { position:relative;max-width:400px;width:100%;
+      background:linear-gradient(160deg,#0f1c1a,#0a1311);
+      border:1px solid #213029;border-radius:18px;padding:24px 22px 20px;
+      color:#DCDDB2;font-family:-apple-system,BlinkMacSystemFont,sans-serif;
+      box-shadow:0 24px 60px rgba(0,0,0,.55); }
+    .ch-x { position:absolute;top:14px;right:16px;background:none;border:none;
+      color:#7f9a8f;font-size:20px;cursor:pointer;line-height:1; }
+    .ch-h1 { font:700 18px/1.2 Impact,Haettenschweiler,sans-serif;letter-spacing:.5px;
+      color:#fff;margin:0 0 3px;text-transform:uppercase; }
+    .ch-date { font-family:var(--mono);font-size:10px;color:#7f9a8f;
+      text-transform:uppercase;letter-spacing:.08em;margin:0 0 16px; }
+    .ch-imposed { display:flex;align-items:center;gap:10px;padding:11px 13px;
+      background:rgba(232,185,78,.08);border:1px solid rgba(232,185,78,.25);
+      border-radius:10px;margin-bottom:14px; }
+    .ch-lock { font-size:14px; }
+    .ch-iname { font-size:15px;font-weight:600;color:#fff; }
+    .ch-icat { font-size:11px;color:#7f9a8f;font-family:var(--mono); }
+    .ch-instr { font-size:13px;line-height:1.55;color:#c8d8cc;margin:0 0 14px; }
+    .ch-result { padding:12px 14px;background:rgba(255,255,255,.04);
+      border-radius:10px;margin-bottom:14px; }
+    .ch-rscore { font:700 22px/1 Impact,Haettenschweiler,sans-serif;
+      color:var(--signature,#E8B94E);letter-spacing:.3px; }
+    .ch-rdetail { font-family:var(--mono);font-size:10px;color:#7f9a8f;
+      margin:4px 0 8px;text-transform:uppercase;letter-spacing:.07em; }
+    .ch-grid { font-size:16px;letter-spacing:3px;margin-bottom:6px; }
+    .ch-rtries { font-family:var(--mono);font-size:10px;color:#7f9a8f; }
+    .ch-streak { display:flex;align-items:center;gap:6px;font-size:13px;
+      color:#c8d8cc;margin-bottom:14px; }
+    .ch-foot { display:flex;gap:10px; }
+    .ch-play { flex:1;padding:10px 0;border:none;border-radius:10px;
+      background:var(--signature,#E8B94E);color:#08100F;
+      font:700 13px/1 -apple-system,sans-serif;cursor:pointer;transition:opacity .15s; }
+    .ch-play:hover { opacity:.82; }
+    .ch-share { flex:1;padding:10px 0;border:1px solid #213029;border-radius:10px;
+      background:transparent;color:#DCDDB2;
+      font:600 13px/1 -apple-system,sans-serif;cursor:pointer;transition:border-color .15s; }
+    .ch-share:hover { border-color:#2a3a37; }
+    `; document.head.appendChild(s); })();
+
+    // Bouton dans la barre d'outils
+    const chalBtn = document.createElement('button');
+    chalBtn.className = 'tool-btn'; chalBtn.id = 'challengeBtn';
+    chalBtn.title = 'Défi du jour';
+    chalBtn.innerHTML = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/></svg><span>Défi du jour</span>`;
+    document.getElementById('textBtn').insertAdjacentElement('afterend', chalBtn);
+
+    // Overlay modal
+    const chOv = document.createElement('div');
+    chOv.className = 'ch-ov';
+    chOv.innerHTML = '<div class="ch-card"><button class="ch-x" id="chX">&#x2715;</button><div id="chContent"></div></div>';
+    document.body.appendChild(chOv);
+    chOv.querySelector('#chX').onclick = closeChallenge;
+    chOv.addEventListener('click', (e) => { if (e.target === chOv) closeChallenge(); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && chOv.classList.contains('show')) closeChallenge(); });
+
+    function openChallenge() {
+      const ds = EPICURE_GAME.dailyDateStr();
+      const imp = EPICURE_GAME.dailyIngredientIdx(ds);
+      const pt = PTS[imp];
+      const st = EPICURE_GAME.dailyLoad(ds);
+      const sk = EPICURE_GAME.streakLoad();
+      const date = `${ds.slice(6,8)}.${ds.slice(4,6)}.${ds.slice(0,4)}`;
+      const impHtml = `<div class="ch-imposed"><span class="ch-lock">🔒</span><div><div class="ch-iname">${pt.e} ${pt.fr}</div><div class="ch-icat">${catFR(pt.c)}</div></div></div>`;
+      const instrHtml = `<p class="ch-instr">Compose le meilleur plat autour de cet ingrédient. Score = Harmonie + Surprise (max ~150). L'ingrédient imposé sera pré-sélectionné.</p>`;
+      let resultHtml = '';
+      if (st && st.completed) {
+        const stars = '★'.repeat(st.bestStars) + '☆'.repeat(3-st.bestStars);
+        const grid = (st.bestPairs||[]).map(v => v>=3?'🟩':v>=2?'🟨':v>=1?'🟧':'⬜').join('') || '—';
+        resultHtml = `<div class="ch-result">
+          <div class="ch-rscore">${stars} ${st.bestTitle}</div>
+          <div class="ch-rdetail">♥${st.bestHarmony} ✨${st.bestSurprise} · Total ${st.bestScore} pts</div>
+          <div class="ch-grid">${grid}</div>
+          <div class="ch-rtries">${st.tries} essai${st.tries > 1 ? 's' : ''}</div>
+        </div>`;
+      }
+      const streakHtml = sk.count >= 2 ? `<div class="ch-streak">🔥 Série de <strong>${sk.count}</strong> jours consécutifs</div>` : '';
+      const playLabel = (st && st.completed) ? 'Améliorer mon score →' : 'Commencer le défi →';
+      const shareBtn = (st && st.completed) ? `<button class="ch-share" id="chShare">Partager ↗</button>` : '';
+      chOv.querySelector('#chContent').innerHTML = `
+        <div class="ch-h1">Défi du jour</div>
+        <div class="ch-date">${date}</div>
+        ${impHtml}${instrHtml}${resultHtml}${streakHtml}
+        <div class="ch-foot">
+          <button class="ch-play" id="chPlay">${playLabel}</button>
+          ${shareBtn}
+        </div>`;
+      chOv.querySelector('#chPlay').onclick = () => {
+        closeChallenge();
+        if (!query.includes(imp)) addToQuery(imp);
+      };
+      const shareEl = chOv.querySelector('#chShare');
+      if (shareEl) shareEl.onclick = function() {
+        const txt = EPICURE_GAME.dailyShareText(ds, st);
+        navigator.clipboard.writeText(txt).catch(() => {});
+        this.textContent = 'Résultat copié ✓';
+        setTimeout(() => { this.textContent = 'Partager ↗'; }, 2200);
+      };
+      chOv.style.display = 'flex';
+      requestAnimationFrame(() => chOv.classList.add('show'));
+    }
+    function closeChallenge() {
+      chOv.classList.remove('show');
+      setTimeout(() => { chOv.style.display = 'none'; }, 300);
+    }
+    chalBtn.onclick = openChallenge;
+
+    updateChallengeBtn = function() {
+      const ds = EPICURE_GAME.dailyDateStr();
+      const st = EPICURE_GAME.dailyLoad(ds);
+      const sk = EPICURE_GAME.streakLoad();
+      if (st && st.completed) {
+        chalBtn.classList.add('on');
+        chalBtn.title = `Défi du jour — ${st.bestTitle} (${st.bestScore} pts)`;
+      }
+      if (sk.count >= 2) {
+        let badge = chalBtn.querySelector('.ch-badge');
+        if (!badge) {
+          badge = document.createElement('span'); badge.className = 'ch-badge';
+          badge.style.cssText = 'position:absolute;top:-5px;right:-4px;min-width:14px;height:14px;background:var(--signature,#E8B94E);color:#08100F;font:700 9px/14px var(--mono,monospace);border-radius:7px;padding:0 3px;text-align:center';
+          chalBtn.style.position = 'relative'; chalBtn.appendChild(badge);
+        }
+        badge.textContent = `🔥${sk.count}`;
+      }
+    };
+    updateChallengeBtn();
   })();
 
   // ── Fiche d'accord ────────────────────────────────────────────────────
