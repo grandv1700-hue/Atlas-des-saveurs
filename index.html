@@ -682,9 +682,7 @@
     background:#08100F; transition:opacity .55s ease;
   }
   #loader.gone { opacity:0; pointer-events:none; }
-  /* Logo version claire : invert rend le sombre→blanc, hue-rotate(180°) ramène rouge→rouge */
-  #loader .ld-logo { width:110px; height:auto;
-    filter:invert(1) hue-rotate(180deg); opacity:.9; }
+  #loader .ld-logo { width:110px; height:auto; opacity:.92; }
   #loader .ld-title { font-family:var(--display); font-weight:900; font-size:30px;
     text-transform:uppercase; letter-spacing:.03em; color:var(--ink); }
   #loader .ld-spin { width:28px; height:28px;
@@ -781,11 +779,20 @@
   </div>
 
   <div id="loader">
-    <img class="ld-logo" src="logo-lrv.svg" alt="La Réserve de Val">
+    <img id="ldLogo" class="ld-logo" alt="La Réserve de Val">
     <div class="ld-title">Atlas des Saveurs</div>
     <div class="ld-spin"></div>
     <div class="ld-msg">Chargement de la carte…</div>
   </div>
+  <script>
+    /* Logo LRV version claire : fetch + remplacement couleurs sombres → blanc */
+    fetch('logo-lrv.svg').then(function(r){return r.text();}).then(function(svg){
+      svg=svg.replace(/fill:\s*#1d1d1b/gi,'fill:#ffffff');
+      var b=new Blob([svg],{type:'image/svg+xml'});
+      var img=document.getElementById('ldLogo');
+      if(img) img.src=URL.createObjectURL(b);
+    }).catch(function(){});
+  </script>
 
   <script src="epicure-data.js"></script>
   <script src="epicure-embeddings.js"></script>

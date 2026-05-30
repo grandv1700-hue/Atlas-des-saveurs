@@ -1130,9 +1130,9 @@
     /* Libellés visibles (état ouvert) */
     #ctrl-tray.open .tool-btn > span:not([class]) {
       max-width:120px; opacity:1; display:inline-block !important; }
-    /* Bouton fermé : padding icon-only */
+    /* Bouton fermé : icon seule centrée (gap:0 évite le décalage dû au span caché) */
     #ctrl-tray:not(.open) .tool-btn:not(.tool-icon) {
-      padding:0 !important; width:38px !important; justify-content:center; flex-shrink:0; }
+      padding:0 !important; width:38px !important; justify-content:center; flex-shrink:0; gap:0 !important; }
     /* Bouton ouvert : padding normal */
     #ctrl-tray.open .tool-btn:not(.tool-icon) { padding:0 14px; width:auto; flex-shrink:0; }
     /* .title-help (bouton ?) adapté au tray */
