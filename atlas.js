@@ -513,7 +513,7 @@
     if (query.length === 0) { panel.style.display = 'none'; return; }
     panel.style.display = 'block';
     const chips = query.map(i =>
-      `<span class="qchip"><span class="qe">${PTS[i].e}</span>${ingName(i)}<button class="qx" data-i="${i}" title="Retirer">&#x2715;</button></span>`
+      `<span class="qchip"><span class="qe">${PTS[i].e}</span>${ingName(i)}<button class="qx" data-i="${i}" title="${t('btn_remove')}">&#x2715;</button></span>`
     ).join('');
     const panelTitle = query.length === 1 ? t('panel_single') : `${t('panel_multi')} · ${query.length}`;
     const rows = results.map(r => {
@@ -889,9 +889,22 @@
     // Subline
     const subEl = document.getElementById('subline');
     if (subEl) subEl.textContent = t('subline').replace('{n}', PTS.length);
-    // Titre carnet
+    // Titre carnet + aria bouton
     const gcnHead = document.getElementById('gcnHead');
     if (gcnHead) gcnHead.textContent = t('carnet_title');
+    const carnetBtnEl = document.getElementById('gCarnetBtn');
+    if (carnetBtnEl) { carnetBtnEl.title = t('carnet_title'); carnetBtnEl.setAttribute('aria-label', t('carnet_title')); }
+    // Bouton défi : titre + libellé span
+    const chalBtnEl = document.getElementById('challengeBtn');
+    if (chalBtnEl) {
+      const chalSpan = chalBtnEl.querySelector('span');
+      if (chalSpan) chalSpan.textContent = t('challenge_title');
+      // Conserver le suffixe score si déjà complété (ne pas écraser un titre enrichi)
+      if (!chalBtnEl.title.includes('—')) chalBtnEl.title = t('challenge_title');
+    }
+    // Toolbar trigger
+    const triggerEl = document.getElementById('ctrl-trigger');
+    if (triggerEl) { triggerEl.title = t('btn_toolbar_title'); triggerEl.setAttribute('aria-label', t('btn_toolbar_title')); }
     // Re-rendre le panel si actif
     if (query.length > 0) { computeResults(); renderPanel(); }
     // Invalider le cache de la liste complète
@@ -923,8 +936,8 @@
     const titleEl = document.querySelector('.title');
     const carnetBtn = document.createElement('button');
     carnetBtn.className = 'gcn-icon-btn'; carnetBtn.id = 'gCarnetBtn';
-    carnetBtn.title = 'Carnet de découvertes';
-    carnetBtn.setAttribute('aria-label', 'Carnet de découvertes');
+    carnetBtn.title = t('carnet_title');
+    carnetBtn.setAttribute('aria-label', t('carnet_title'));
     carnetBtn.innerHTML = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg><span class="gcn-badge" aria-hidden="true"></span>`;
     titleEl.insertBefore(carnetBtn, document.getElementById('introBtn'));
 
@@ -1039,8 +1052,8 @@
     // Bouton dans la barre d'outils
     const chalBtn = document.createElement('button');
     chalBtn.className = 'tool-btn'; chalBtn.id = 'challengeBtn';
-    chalBtn.title = 'Défi du jour';
-    chalBtn.innerHTML = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/></svg><span>Défi du jour</span>`;
+    chalBtn.title = t('challenge_title');
+    chalBtn.innerHTML = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/></svg><span>${t('challenge_title')}</span>`;
     document.getElementById('textBtn').insertAdjacentElement('afterend', chalBtn);
 
     // Overlay modal
@@ -1060,22 +1073,22 @@
       const sk = EPICURE_GAME.streakLoad();
       const date = `${ds.slice(6,8)}.${ds.slice(4,6)}.${ds.slice(0,4)}`;
       const impHtml = `<div class="ch-imposed"><span class="ch-lock">🔒</span><div><div class="ch-iname">${pt.e} ${pt.fr}</div><div class="ch-icat">${catFR(pt.c)}</div></div></div>`;
-      const instrHtml = `<p class="ch-instr">Compose la meilleure combinaison autour de cet ingrédient. Score = Harmonie + Surprise (max ~150). L'ingrédient imposé sera pré-sélectionné.</p>`;
+      const instrHtml = `<p class="ch-instr">${t('challenge_instr')}</p>`;
       let resultHtml = '';
       if (st && st.completed) {
         const stars = '★'.repeat(st.bestStars) + '☆'.repeat(3-st.bestStars);
         const grid = (st.bestPairs||[]).map(v => v>=3?'🟩':v>=2?'🟨':v>=1?'🟧':'⬜').join('') || '—';
         resultHtml = `<div class="ch-result">
-          <div class="ch-rscore">${stars} ${st.bestTitle}</div>
+          <div class="ch-rscore">${stars} ${tVerdict(st.bestTitle)}</div>
           <div class="ch-rdetail">♥${st.bestHarmony} ✨${st.bestSurprise} · Total ${st.bestScore} pts</div>
           <div class="ch-grid">${grid}</div>
         </div>`;
       }
-      const streakHtml = sk.count >= 2 ? `<div class="ch-streak">🔥 Série de <strong>${sk.count}</strong> jours consécutifs</div>` : '';
-      const playLabel = (st && st.completed) ? 'Améliorer mon score →' : 'Commencer le défi →';
-      const shareBtn = (st && st.completed) ? `<button class="ch-share" id="chShare">Partager ↗</button>` : '';
+      const streakHtml = sk.count >= 2 ? `<div class="ch-streak">${t('challenge_streak').replace('{n}', `<strong>${sk.count}</strong>`)}</div>` : '';
+      const playLabel = (st && st.completed) ? t('challenge_improve') : t('challenge_go');
+      const shareBtn = (st && st.completed) ? `<button class="ch-share" id="chShare">${t('challenge_share')}</button>` : '';
       chOv.querySelector('#chContent').innerHTML = `
-        <div class="ch-h1">Défi du jour</div>
+        <div class="ch-h1">${t('challenge_title')}</div>
         <div class="ch-date">${date}</div>
         ${impHtml}${instrHtml}${resultHtml}${streakHtml}
         <div class="ch-foot">
@@ -1090,8 +1103,8 @@
       if (shareEl) shareEl.onclick = function() {
         const txt = EPICURE_GAME.dailyShareText(ds, st);
         navigator.clipboard.writeText(txt).catch(() => {});
-        this.textContent = 'Résultat copié ✓';
-        setTimeout(() => { this.textContent = 'Partager ↗'; }, 2200);
+        this.textContent = t('challenge_copied');
+        setTimeout(() => { this.textContent = t('challenge_share'); }, 2200);
       };
       chalBtn.classList.add('on');
       chOv.style.display = 'flex';
@@ -1109,7 +1122,7 @@
       const st = EPICURE_GAME.dailyLoad(ds);
       const sk = EPICURE_GAME.streakLoad();
       if (st && st.completed) {
-        chalBtn.title = `Défi du jour — ${st.bestTitle} (${st.bestScore} pts)`;
+        chalBtn.title = `${t('challenge_title')} — ${tVerdict(st.bestTitle)} (${st.bestScore} pts)`;
       }
       if (sk.count >= 2) {
         let badge = chalBtn.querySelector('.ch-badge');
@@ -1257,8 +1270,8 @@
     // Trigger chevron (< fermé → > ouvert après rotation 180°)
     const trigger = document.createElement('button');
     trigger.id = 'ctrl-trigger'; trigger.className = 'tool-btn tool-icon';
-    trigger.title = 'Afficher / masquer les libellés';
-    trigger.setAttribute('aria-label', 'Ouvrir / fermer les libellés des outils');
+    trigger.title = t('btn_toolbar_title');
+    trigger.setAttribute('aria-label', t('btn_toolbar_title'));
     trigger.innerHTML = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>`;
     outer.appendChild(trigger);
     document.body.appendChild(outer);
