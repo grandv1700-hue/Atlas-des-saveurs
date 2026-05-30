@@ -52,10 +52,12 @@ window.EPICURE_GAME = (function () {
   }
 
   // ── Verdict de chef (barème sur harmonie + surprise) ──────────────────
+  // Aligné sur strengthColor : faible<25 / correct 25-31 / bon 32-39 / excellent 40+
   function chefVerdict(G) {
     if (!G || G.harmony < 25) return { stars: 0, title: 'Le plat ne tient pas' };
     if (G.pepite || (G.harmony >= 40 && G.surprise >= 45)) return { stars: 3, title: 'Coup de génie' };
-    if (G.harmony >= 32 && G.surprise >= 20) return { stars: 2, title: 'Belle assiette' };
+    if (G.harmony >= 32) return { stars: 2, title: 'Belle assiette' };   // bon accord = épingnable
+    if (G.surprise >= 30) return { stars: 2, title: 'Audacieux' };       // surprise seule, même si correct
     return { stars: 1, title: 'Correct' };
   }
 
