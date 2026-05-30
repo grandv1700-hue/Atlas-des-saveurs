@@ -130,29 +130,6 @@
     const qset = new Set(query);
     const rset = new Set(results.map(r => r.i));
 
-    // ── arêtes : de chaque ingrédient-requête vers les meilleurs résultats ──
-    if (hasQuery) {
-      ctx.globalCompositeOperation = 'lighter';
-      const topR = results.slice(0, 14);
-      for (const qi of query) {
-        const q = PTS[qi], ca = proj(q);
-        for (const r of topR) {
-          const t = PTS[r.i];
-          if (!(q.nb.includes(r.i) || t.nb.includes(qi))) continue;
-          const c = proj(t);
-          const x0 = ca.sx + oo[0], y0 = ca.sy + oo[1], x1 = c.sx + oo[0], y1 = c.sy + oo[1];
-          const lg = ctx.createLinearGradient(x0, y0, x1, y1);
-          lg.addColorStop(0, 'rgba(195,69,60,0.8)');
-          lg.addColorStop(1, hexToRgba(colorOf(t.c), 0.4));
-          ctx.strokeStyle = lg; ctx.globalAlpha = 0.26; ctx.lineWidth = 3 * c.f;
-          ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
-          ctx.globalAlpha = 0.75; ctx.lineWidth = 1 * c.f;
-          ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
-        }
-      }
-      ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
-    }
-
     // ── nuage : halo additif (A) + points nets (B) ──
     ctx.globalCompositeOperation = 'lighter';
     for (const o of P) {
