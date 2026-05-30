@@ -55,9 +55,9 @@ window.EPICURE_GAME = (function () {
 
   // ── Verdict de chef ────────────────────────────────────────────────────
   function chefVerdict(G) {
-    if (!G || G.harmony < 25) return { stars: 0, title: 'Le plat ne tient pas' };
-    if (G.pepite || (G.harmony >= 40 && G.surprise >= 28)) return { stars: 3, title: 'Coup de génie' };
-    if (G.harmony >= 32) return { stars: 2, title: 'Belle assiette' };
+    if (!G || G.harmony < 25) return { stars: 0, title: 'Ne tient pas' };
+    if (G.pepite || (G.harmony >= 40 && G.surprise >= 28)) return { stars: 3, title: 'Combinaison de génie' };
+    if (G.harmony >= 32) return { stars: 2, title: 'Belle combinaison' };
     return { stars: 1, title: 'Correct' };
   }
 

@@ -84,8 +84,8 @@
       body: 'Tape un nom dans la barre de recherche, ou clique directement un point du nuage pour l\'ajouter à ta sélection.',
       targetId: 'search',
       onAdvance: () => ensureN(1) },   // avant "Composer" : au moins 1 sélectionné
-    { title: 'Composer un plat',
-      body: 'Ajoutes-en un deuxième — le bloc "Score du plat" (Harmonie + Surprise) apparaît dans le panneau de droite.',
+    { title: 'Explorer une combinaison',
+      body: 'Ajoutes-en un deuxième — le Score de la combinaison (Harmonie + Surprise) apparaît dans le panneau de droite.',
       targetId: 'search',
       onAdvance: () => ensureN(2) },   // avant "Filtrer" : duo entier (score visible)
     { title: 'Filtrer par catégorie',

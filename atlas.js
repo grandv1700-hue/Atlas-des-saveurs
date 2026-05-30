@@ -893,7 +893,7 @@
     function openCarnet() {
       const entries = EPICURE_GAME.carnetLoad();
       if (entries.length === 0) {
-        listEl.innerHTML = '<div class="gcn-empty">Aucune découverte encore.<br/>Composez un plat notable et épinglez-le !</div>';
+        listEl.innerHTML = '<div class="gcn-empty">Aucune découverte encore.<br/>Composez une combinaison notable et épinglez-la !</div>';
       } else {
         listEl.innerHTML = entries.map((e, k) => {
           const st = '★'.repeat(e.stars) + '☆'.repeat(3 - e.stars);
@@ -1009,7 +1009,7 @@
       const sk = EPICURE_GAME.streakLoad();
       const date = `${ds.slice(6,8)}.${ds.slice(4,6)}.${ds.slice(0,4)}`;
       const impHtml = `<div class="ch-imposed"><span class="ch-lock">🔒</span><div><div class="ch-iname">${pt.e} ${pt.fr}</div><div class="ch-icat">${catFR(pt.c)}</div></div></div>`;
-      const instrHtml = `<p class="ch-instr">Compose le meilleur plat autour de cet ingrédient. Score = Harmonie + Surprise (max ~150). L'ingrédient imposé sera pré-sélectionné.</p>`;
+      const instrHtml = `<p class="ch-instr">Compose la meilleure combinaison autour de cet ingrédient. Score = Harmonie + Surprise (max ~150). L'ingrédient imposé sera pré-sélectionné.</p>`;
       let resultHtml = '';
       if (st && st.completed) {
         const stars = '★'.repeat(st.bestStars) + '☆'.repeat(3-st.bestStars);
