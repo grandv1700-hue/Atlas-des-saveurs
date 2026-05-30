@@ -970,7 +970,6 @@
           <div class="ch-rscore">${stars} ${st.bestTitle}</div>
           <div class="ch-rdetail">♥${st.bestHarmony} ✨${st.bestSurprise} · Total ${st.bestScore} pts</div>
           <div class="ch-grid">${grid}</div>
-          <div class="ch-rtries">${st.tries} essai${st.tries > 1 ? 's' : ''}</div>
         </div>`;
       }
       const streakHtml = sk.count >= 2 ? `<div class="ch-streak">🔥 Série de <strong>${sk.count}</strong> jours consécutifs</div>` : '';

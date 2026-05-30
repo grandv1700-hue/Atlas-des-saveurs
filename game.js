@@ -183,7 +183,16 @@ window.EPICURE_GAME = (function () {
     for (let i = 0; i < ds.length; i++) { h ^= ds.charCodeAt(i); h = Math.imul(h, 16777619); }
     return h >>> 0;
   }
-  function dailyIngredientIdx(ds) { return dailySeed(ds) % PTS.length; }
+  function dailyIngredientIdx(ds) {
+    // Pool winnable : deg entre 25 et 90 (ni isolé ni passe-partout fade)
+    const d = DG.deg || [];
+    const pool = [];
+    for (let i = 0; i < PTS.length; i++) {
+      const v = d[i] || 0;
+      if (v >= 25 && v <= 90) pool.push(i);
+    }
+    return pool.length ? pool[dailySeed(ds) % pool.length] : dailySeed(ds) % PTS.length;
+  }
   const DAILY_PFX = 'atlas_daily_v1_', STREAK_KEY2 = 'atlas_streak_v1';
   function dailyLoad(ds) { try { return JSON.parse(localStorage.getItem(DAILY_PFX+ds))||null; } catch(e) { return null; } }
   function _dailySave(ds, st) { try { localStorage.setItem(DAILY_PFX+ds, JSON.stringify(st)); } catch(e) {} }
