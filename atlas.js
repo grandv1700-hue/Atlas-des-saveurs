@@ -314,6 +314,18 @@
     .fcoh { display: flex; align-items: center; gap: 7px; margin-top: 10px;
       font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: .07em; color: var(--ink-3); }
     .fcoh-v { font-weight: 700; border-radius: 5px; padding: 1px 6px; font-variant-numeric: tabular-nums; }
+    .gscore { margin-bottom: 13px; padding-bottom: 12px; border-bottom: 1px solid var(--line); }
+    .gscore .lbl { font-family: var(--mono); font-size: 9.5px; font-weight: 500; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-3); margin-bottom:10px; display:flex; align-items:center; gap:7px; }
+    .gpep { font-family: var(--mono); font-size:9px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:#08100F; background:var(--signature); border-radius:5px; padding:2px 6px; }
+    .gaxis { margin-bottom:11px; }
+    .gaxis:last-child { margin-bottom:0; }
+    .gaxis-top { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:5px; }
+    .gaxis-name { font-size:12.5px; color:var(--ink-2); }
+    .gaxis-val { font-family:var(--mono); font-weight:700; font-size:14px; color:var(--ink); font-variant-numeric:tabular-nums; }
+    .gaxis-lab { font-size:9.5px; font-family:var(--mono); text-transform:uppercase; letter-spacing:.06em; margin-left:7px; }
+    .gbar { height:7px; border-radius:4px; background:var(--surface-2); overflow:hidden; }
+    .gbar-fill { height:100%; border-radius:4px; transition:width .3s ease; }
+    .gnote { font-size:10.5px; font-family:var(--mono); color:var(--ink-3); margin-top:5px; line-height:1.4; }
     `;
     document.head.appendChild(s);
   })();
@@ -322,46 +334,45 @@
   // Largeur de jauge : on etale 0-0.5 (plage utile des cosinus Epicure) sur 0-100 %.
   const barW = (v) => Math.max(3, Math.min(100, (v / 0.5) * 100));
 
-  function renderForce() {
-    const q = query;
-    if (q.length === 2) {
-      const v = EPICURE_PAIRING.sim(q[0], q[1]);
-      const sc = EPICURE_PAIRING.strengthColor(v);
-      const a = PTS[q[0]], b = PTS[q[1]];
-      return `<div class="facc">
-        <div class="lbl">Force de l'accord</div>
-        <div class="fpair-row">
-          <span class="fpair-name">${a.e} ${a.fr}</span>
-          <span class="fpair-x">&times;</span>
-          <span class="fpair-name" style="text-align:right">${b.fr} ${b.e}</span>
-        </div>
-        <div class="fbar"><div class="fbar-fill" style="width:${barW(v)}%;background:${sc.color}"></div></div>
-        <div class="fpair-foot">
-          <span class="lab" style="color:${sc.color}">${sc.label}</span>
-          <span class="val">${pctOf(v)}</span>
-        </div>
-      </div>`;
-    }
-    let mn = Infinity;
-    const cells = [];
-    for (let a = 0; a < q.length; a++) for (let b = a + 1; b < q.length; b++) {
-      const v = EPICURE_PAIRING.sim(q[a], q[b]);
-      if (v < mn) mn = v;
-      const sc = EPICURE_PAIRING.strengthColor(v);
-      cells.push(`<div class="fcell" title="${PTS[q[a]].fr} × ${PTS[q[b]].fr} · ${sc.label}">
-        <span class="fcell-pair">${PTS[q[a]].e}${PTS[q[b]].e}</span>
-        <span class="fcell-v" style="background:${sc.color};color:#08100F">${pctOf(v)}</span>
-      </div>`);
-    }
-    const scMn = EPICURE_PAIRING.strengthColor(mn);
-    return `<div class="facc">
-      <div class="lbl">Forces des paires</div>
-      <div class="fcells">${cells.join('')}</div>
-      <div class="fcoh">Maillon faible
-        <span class="fcoh-v" style="background:${scMn.color};color:#08100F">${pctOf(mn)}</span>
-        <span style="color:${scMn.color}">${scMn.label}</span>
+  function scoreHeader(G) {
+    const pep = G.pepite ? '<span class="gpep">✨ Pépite</span>' : '';
+    const hv = G.harmonyVerdict, sv = G.surpriseVerdict;
+    const weak = G.weakest ? `<div class="gnote">Maillon faible : ${PTS[G.weakest.i].fr} × ${PTS[G.weakest.j].fr}</div>` : '';
+    const find = (G.bold && G.bold.s > 0) ? `<div class="gnote">Trouvaille : ${PTS[G.bold.i].fr} × ${PTS[G.bold.j].fr}</div>` : '';
+    return `<div class="gscore">
+      <div class="lbl">Score du plat ${pep}</div>
+      <div class="gaxis">
+        <div class="gaxis-top"><span class="gaxis-name">Harmonie</span>
+          <span><span class="gaxis-val">${G.harmony}</span><span class="gaxis-lab" style="color:${hv.color}">${hv.label}</span></span></div>
+        <div class="gbar"><div class="gbar-fill" style="width:${G.harmony}%;background:${hv.color}"></div></div>
+        ${weak}
+      </div>
+      <div class="gaxis">
+        <div class="gaxis-top"><span class="gaxis-name">Surprise</span>
+          <span><span class="gaxis-val">${G.surprise}</span><span class="gaxis-lab" style="color:${sv.color}">${sv.label}</span></span></div>
+        <div class="gbar"><div class="gbar-fill" style="width:${G.surprise}%;background:${sv.color}"></div></div>
+        ${find}
       </div>
     </div>`;
+  }
+
+  function renderForce() {
+    const G = window.EPICURE_GAME ? EPICURE_GAME.compositionScore(query) : null;
+    if (!G) return '';
+    let detail = '';
+    if (query.length >= 3) {
+      const cells = [];
+      for (let a = 0; a < query.length; a++) for (let b = a + 1; b < query.length; b++) {
+        const v = EPICURE_PAIRING.sim(query[a], query[b]);
+        const sc = EPICURE_PAIRING.strengthColor(v);
+        cells.push(`<div class="fcell" title="${PTS[query[a]].fr} × ${PTS[query[b]].fr} · ${sc.label}">
+          <span class="fcell-pair">${PTS[query[a]].e}${PTS[query[b]].e}</span>
+          <span class="fcell-v" style="background:${sc.color};color:#08100F">${Math.round(v*100)}</span>
+        </div>`);
+      }
+      detail = `<div class="facc"><div class="lbl">Forces des paires</div><div class="fcells">${cells.join('')}</div></div>`;
+    }
+    return scoreHeader(G) + detail;
   }
 
   function renderPanel() {
