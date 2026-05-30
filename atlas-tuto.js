@@ -11,27 +11,27 @@
   st.textContent = `
   .atb { position:fixed; bottom:24px; left:50%; transform:translateX(-50%);
     z-index:9800; max-width:340px; width:calc(100% - 32px);
-    background:linear-gradient(160deg,#0f1c1a,#0a1311);
-    border:1px solid #213029; border-radius:14px; padding:18px 18px 14px;
-    color:#DCDDB2; font-family:-apple-system,BlinkMacSystemFont,sans-serif;
-    box-shadow:0 16px 40px rgba(0,0,0,.5); display:none; }
+    background:#DCDDB2;
+    border:1px solid rgba(33,48,41,.18); border-radius:14px; padding:18px 18px 14px;
+    color:#1a2e28; font-family:-apple-system,BlinkMacSystemFont,sans-serif;
+    box-shadow:0 8px 28px rgba(0,0,0,.18); display:none; }
   .atb.show { display:block; animation:atb-in .25s ease; }
   @keyframes atb-in { from { opacity:0; transform:translateX(-50%) translateY(10px); }
                       to   { opacity:1; transform:translateX(-50%) translateY(0); } }
   .atb-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
   .atb-title { font:700 14px/1.2 Impact,Haettenschweiler,sans-serif;
-    letter-spacing:.5px; color:#fff; text-transform:uppercase; }
+    letter-spacing:.5px; color:#0f1c1a; text-transform:uppercase; }
   .atb-step { font-family:var(--mono,monospace); font-size:9.5px;
-    color:#7f9a8f; text-transform:uppercase; letter-spacing:.08em; }
-  .atb-body { font-size:13.5px; line-height:1.55; color:#c8d8cc; margin:0 0 14px; }
+    color:#5a7a6f; text-transform:uppercase; letter-spacing:.08em; }
+  .atb-body { font-size:13.5px; line-height:1.55; color:#2a3c35; margin:0 0 14px; }
   .atb-foot { display:flex; align-items:center; gap:10px; }
   .atb-next { flex:1; padding:9px 0; border:none; border-radius:9px;
     background:var(--signature,#E8B94E); color:#08100F;
     font:700 13px/1 -apple-system,sans-serif; cursor:pointer; transition:opacity .15s; }
   .atb-next:hover { opacity:.82; }
-  .atb-skip { background:none; border:none; color:#7f9a8f; font-size:12px;
+  .atb-skip { background:none; border:none; color:#5a7a6f; font-size:12px;
     cursor:pointer; padding:0; transition:color .15s; white-space:nowrap; }
-  .atb-skip:hover { color:#DCDDB2; }
+  .atb-skip:hover { color:#1a2e28; }
   /* Halo sur l'élément pointé — collé à l'élément, sans débordement sur les voisins */
   .tuto-focus { outline:2px solid var(--signature,#E8B94E) !important;
     outline-offset:1px; box-shadow:none !important;
@@ -42,11 +42,11 @@
     50%      { outline-color:rgba(232,185,78,.4); }
   }
   .atb-replay { display:block; width:100%; margin-top:10px; padding:9px;
-    border:1px solid #1c2a25; border-radius:9px; background:transparent;
-    color:#7f9a8f; font-size:13px; cursor:pointer;
+    border:1px solid rgba(33,48,41,.2); border-radius:9px; background:transparent;
+    color:#5a7a6f; font-size:13px; cursor:pointer;
     transition:color .15s,border-color .15s;
     font-family:-apple-system,BlinkMacSystemFont,sans-serif; }
-  .atb-replay:hover { color:#DCDDB2; border-color:#2a3a37; }
+  .atb-replay:hover { color:#1a2e28; border-color:rgba(33,48,41,.35); }
   `;
   document.head.appendChild(st);
 
