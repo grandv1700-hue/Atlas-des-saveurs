@@ -1182,6 +1182,7 @@
     // ── Recherche : premier élément du tray, toujours visible ──
     const searchWrap = document.querySelector('.search-wrap');
     if (searchWrap) {
+      searchWrap.id = 'searchWrapBtn'; // ciblable par le tuto
       // Icône loupe inline (remplace le SVG absolu)
       const swIcon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
       swIcon.setAttribute('viewBox', '0 0 24 24');
@@ -1213,13 +1214,14 @@
 
     const KEY = 'atlas_ctrlmenu_v1';
     let isOpen = true;
+    let locked = false; // verrouillé pendant le tuto
     function setOpen(v) {
       isOpen = v;
       tray.classList.toggle('open', v);
       trigger.classList.toggle('on', v);
       try { localStorage.setItem(KEY, v ? '1' : '0'); } catch(ex) {}
     }
-    trigger.onclick = (e) => { e.stopPropagation(); setOpen(!isOpen); };
+    trigger.onclick = (e) => { e.stopPropagation(); if (!locked) setOpen(!isOpen); };
 
     // Défaut : ouvert ; respecter la préférence stockée si présente
     let init = true;
@@ -1228,6 +1230,9 @@
       if (stored !== null) init = stored === '1';
     } catch(ex) {}
     setOpen(init);
+
+    // API publique : tuto peut ouvrir/verrouiller la barre
+    window.ATLAS_CTRL = { setOpen: v => setOpen(v), lock: v => { locked = v; } };
   })();
 
   // ── Fiche d'accord ────────────────────────────────────────────────────

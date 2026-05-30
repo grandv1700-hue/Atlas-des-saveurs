@@ -52,7 +52,7 @@
   `;
   document.head.appendChild(st);
 
-  // ── Duos curatés pour la démo (bons accords, noms FR exacts dans PTS) ──
+  // ── Duos curatés pour la démo ─────────────────────────────────────────
   const DEMO_PAIRS = [
     ['chocolat', 'orange'],
     ['tomate', 'basilic'],
@@ -61,30 +61,34 @@
     ['cannelle', 'pomme'],
   ];
 
-  // Garantit N ingrédients sélectionnés. Si insuffisant, efface et pose un duo démo.
+  // Garantit N ingrédients sélectionnés. Fallback absolu sur les premiers de PTS.
   function ensureN(n) {
     const chips = document.querySelectorAll('#panel .qchip').length;
     if (chips >= n) return;
     const PTS = window.EPICURE && window.EPICURE.PTS;
-    const sel = window.select;
-    if (!PTS || !sel) return;
+    if (!PTS || !window.select) return;
     if (window.clearSel) window.clearSel();
     for (const pair of DEMO_PAIRS) {
       const idx = pair
         .map(nm => PTS.findIndex(p => p.fr.toLowerCase() === nm))
         .filter(i => i >= 0);
-      if (idx.length >= n) { idx.slice(0, n).forEach(i => sel(i)); return; }
+      if (idx.length >= n) { idx.slice(0, n).forEach(i => window.select(i)); return; }
+    }
+    // Fallback absolu : premiers éléments disponibles dans PTS
+    for (let i = 0, added = 0; i < PTS.length && added < n; i++) {
+      window.select(i); added++;
     }
   }
 
   // ── Helpers d'action réelle (clics sur les vrais boutons) ─────────────
 
-  // Filtrer par catégorie : ouvre la légende si repliée, clique le premier item si rien n'est filtré
+  // Filtrer par catégorie : ouvre la légende, clique le 1er item si rien n'est filtré
   function autoFilterCat() {
     const legEl = document.getElementById('leg');
-    if (legEl && legEl.classList.contains('collapsed')) legEl.classList.remove('collapsed');
+    if (legEl) legEl.classList.remove('collapsed');
     const legReset = document.getElementById('legReset');
-    if (legReset && legReset.classList.contains('hidden')) {
+    const noFilter = !legReset || legReset.classList.contains('hidden');
+    if (noFilter) {
       const firstItem = document.querySelector('#leg .leg-item');
       if (firstItem) firstItem.click();
     }
@@ -108,40 +112,47 @@
     if (btn && !btn.classList.contains('disabled') && !btn.classList.contains('on')) btn.click();
   }
 
-  // ── Étapes ────────────────────────────────────────────────────────────
-  // onEnter  : déclenché à l'ARRIVÉE sur l'étape (démo auto si pas encore fait)
-  // onAdvance: déclenché au clic "Suivant" (garantit l'état pour l'étape suivante)
+  // ── Étapes ─────────────────────────────────────────────────────────────
+  // targetId  : ID DOM de l'élément surligné (doit exister dans le DOM actuel)
+  // onEnter   : déclenché à l'ARRIVÉE sur l'étape (démo auto si pas encore fait)
+  // onAdvance : déclenché au clic "Suivant" (garantit l'état pour l'étape suivante)
   const STEPS = [
     { title: 'Rechercher un ingrédient',
       body: 'Tape un nom dans la barre de recherche, ou clique directement un point du nuage pour l\'ajouter à ta sélection.',
-      targetId: 'search',
+      targetId: 'searchWrapBtn',
       onAdvance: () => ensureN(1) },
+
     { title: 'Explorer une combinaison',
       body: 'Ajoutes-en un deuxième — le Score de la combinaison (Harmonie + Surprise) apparaît dans le panneau de droite.',
-      targetId: 'search',
+      targetId: 'searchWrapBtn',
       onAdvance: () => ensureN(2) },
+
     { title: 'Filtrer par catégorie',
       body: 'Clique un item dans la légende (bas gauche) pour n\'afficher qu\'une famille d\'ingrédients et lire leurs noms sur la carte.',
       targetId: 'leg',
       onEnter:   autoFilterCat,
       onAdvance: resetCatFilter },
-    { title: 'Rotation automatique',
-      body: 'Ce bouton lance ou arrête la rotation 3D. Utile pour explorer l\'ensemble du nuage.',
-      targetId: 'spinBtn',
-      onEnter:   autoSpin,
-      onAdvance: null },
+
     { title: 'Centrer la vue',
       body: 'Recadre la carte sur les ingrédients de ta sélection courante.',
       targetId: 'centerBtn',
       onEnter:   autoCenter,
       onAdvance: null },
+
     { title: 'Taille du texte',
       body: 'Ajuste la taille des labels affichés sur la carte — pratique sur grand écran ou mobile.',
       targetId: 'textBtn',
       onAdvance: null },
+
     { title: 'Carnet & pépites',
       body: 'Épingle tes meilleurs accords (★★+) au Carnet pour y revenir. Les pépites sont des accords audacieux qui tiennent aromatiquement.',
       targetId: 'gCarnetBtn',
+      onAdvance: null },
+
+    { title: 'Rotation automatique',
+      body: 'Ce bouton lance ou arrête la rotation 3D. Utile pour explorer l\'ensemble du nuage.',
+      targetId: 'spinBtn',
+      onEnter:   autoSpin,
       onAdvance: null },
   ];
 
@@ -180,7 +191,6 @@
     setFocus(s.targetId);
     bub.classList.add('show');
     if (focusEl) focusEl.scrollIntoView({ block: 'nearest', inline: 'nearest' });
-    // Déclencher l'action de démo à l'arrivée sur cette étape
     if (s.onEnter) s.onEnter();
   }
 
@@ -199,11 +209,17 @@
     step = -1;
     seen = true;
     try { localStorage.setItem(SEEN_KEY, '1'); } catch (e) {}
-    // Terminer sur la carte en rotation
+    // Déverrouiller la barre d'outils
+    window.ATLAS_CTRL?.lock(false);
+    // Terminer : rotation lancée, sélection vidée
     autoSpin();
+    if (window.clearSel) window.clearSel();
   }
 
   function start() {
+    // Ouvrir et verrouiller la barre d'outils pendant tout le tuto
+    window.ATLAS_CTRL?.setOpen(true);
+    window.ATLAS_CTRL?.lock(true);
     showStep(0);
   }
 
@@ -215,7 +231,7 @@
     if (e.key === 'ArrowRight') advance();
   });
 
-  // ── "Revoir le tuto" dans la modale ? ────────────────────────────────
+  // ── "Revoir le tuto" dans la modale intro ────────────────────────────
   function addReplayBtn() {
     if (document.getElementById('atbReplay')) return;
     const goBtn = document.querySelector('.ai-go');
