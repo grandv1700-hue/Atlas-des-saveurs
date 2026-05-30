@@ -1103,20 +1103,27 @@
     } catch(ex) {}
   })();
 
-  // ── Menu de boutons compact (déclencheur ⋯, déploiement horizontal) ────
+  // ── Menu de boutons (chevron, icônes toujours visibles, libellés au clic) ────
   (function initCtrlMenu() {
     (function(){ const s = document.createElement('style'); s.textContent = `
     /* Conteneur fixe haut-droite */
     #ctrl-outer { position:fixed; top:8px; right:8px; z-index:9200;
       display:flex; align-items:center; gap:5px; }
-    /* Tray animé */
-    #ctrl-tray { display:flex; align-items:center; gap:5px;
-      max-width:0; overflow:hidden;
-      transition:max-width .28s cubic-bezier(.25,.8,.25,1); }
-    #ctrl-tray.open { max-width:480px; }
-    /* Boutons dans le tray : icône seule */
-    #ctrl-tray .tool-btn > span:not([class]) { display:none !important; }
-    #ctrl-tray .tool-btn:not(.tool-icon) { padding:0 !important; width:38px !important; justify-content:center; flex-shrink:0; }
+    /* Tray : icônes TOUJOURS visibles */
+    #ctrl-tray { display:flex; align-items:center; gap:5px; }
+    /* Libellés texte : cachés (état fermé) */
+    #ctrl-tray .tool-btn > span:not([class]) {
+      display:inline-block; max-width:0; overflow:hidden; opacity:0;
+      transition:max-width .28s cubic-bezier(.25,.8,.25,1), opacity .2s ease;
+      white-space:nowrap; vertical-align:middle; }
+    /* Libellés visibles (état ouvert) */
+    #ctrl-tray.open .tool-btn > span:not([class]) {
+      max-width:120px; opacity:1; display:inline-block !important; }
+    /* Bouton fermé : padding icon-only */
+    #ctrl-tray:not(.open) .tool-btn:not(.tool-icon) {
+      padding:0 !important; width:38px !important; justify-content:center; flex-shrink:0; }
+    /* Bouton ouvert : padding normal */
+    #ctrl-tray.open .tool-btn:not(.tool-icon) { padding:0 14px; width:auto; flex-shrink:0; }
     /* .title-help (bouton ?) adapté au tray */
     #ctrl-tray > .title-help {
       display:inline-flex !important; align-items:center; justify-content:center;
@@ -1128,7 +1135,7 @@
       backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px);
       vertical-align:unset; line-height:1; }
     #ctrl-tray > .title-help:hover { color:var(--ink) !important; border-color:var(--ink-4); background:var(--surface-3); }
-    /* Carnet : toujours visible, adapté au conteneur */
+    /* Carnet : toujours visible */
     #ctrl-outer .gcn-icon-btn { width:38px !important; height:38px !important;
       vertical-align:unset !important; margin-left:0 !important;
       background:var(--surface-2); border:1px solid var(--line-strong);
@@ -1138,11 +1145,21 @@
     .ai-btn { display:none !important; }
     /* Zen mode : cacher tout le menu */
     body.zen #ctrl-outer { display:none !important; }
+    /* Chevron : rotation selon état ouvert/fermé */
+    #ctrl-trigger svg { transition:transform .28s cubic-bezier(.25,.8,.25,1); }
+    #ctrl-trigger.on svg { transform:rotate(180deg); }
+    /* Recherche intégrée dans #ctrl-outer : ne pas hériter des règles flex de #top mobile */
+    #ctrl-outer .search-wrap { order:unset !important; flex:none !important; }
     `; document.head.appendChild(s); })();
 
     // Créer le conteneur et le tray
     const outer = document.createElement('div'); outer.id = 'ctrl-outer';
     const tray  = document.createElement('div'); tray.id  = 'ctrl-tray';
+
+    // Barre de recherche : intégrée dans #ctrl-outer, toujours visible
+    const searchWrap = document.querySelector('.search-wrap');
+    if (searchWrap) outer.appendChild(searchWrap);
+
     outer.appendChild(tray);
 
     // Déplacer les boutons dans le tray (dans l'ordre voulu)
@@ -1155,16 +1172,17 @@
     const carnetEl = document.getElementById('gCarnetBtn');
     if (carnetEl) outer.appendChild(carnetEl);
 
-    // Trigger ⋯
+    // Trigger chevron (< fermé → > ouvert après rotation 180°)
     const trigger = document.createElement('button');
     trigger.id = 'ctrl-trigger'; trigger.className = 'tool-btn tool-icon';
-    trigger.title = 'Outils'; trigger.setAttribute('aria-label', 'Ouvrir / fermer les outils');
-    trigger.innerHTML = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><circle cx="5" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="19" cy="12" r="1.2"/></svg>`;
+    trigger.title = 'Afficher / masquer les libellés';
+    trigger.setAttribute('aria-label', 'Ouvrir / fermer les libellés des outils');
+    trigger.innerHTML = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>`;
     outer.appendChild(trigger);
     document.body.appendChild(outer);
 
     const KEY = 'atlas_ctrlmenu_v1';
-    let isOpen = false;
+    let isOpen = true;
     function setOpen(v) {
       isOpen = v;
       tray.classList.toggle('open', v);
@@ -1172,11 +1190,13 @@
       try { localStorage.setItem(KEY, v ? '1' : '0'); } catch(ex) {}
     }
     trigger.onclick = (e) => { e.stopPropagation(); setOpen(!isOpen); };
-    document.addEventListener('click', (e) => {
-      if (isOpen && !outer.contains(e.target)) setOpen(false);
-    });
-    let init = false;
-    try { init = localStorage.getItem(KEY) === '1'; } catch(ex) {}
+
+    // Défaut : ouvert ; respecter la préférence stockée si présente
+    let init = true;
+    try {
+      const stored = localStorage.getItem(KEY);
+      if (stored !== null) init = stored === '1';
+    } catch(ex) {}
     setOpen(init);
   })();
 
