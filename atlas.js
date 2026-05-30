@@ -1111,7 +1111,7 @@
       display:flex; align-items:center; gap:5px; }
     /* Tray : icônes TOUJOURS visibles */
     #ctrl-tray { display:flex; align-items:center; gap:5px; }
-    /* Libellés texte : cachés (état fermé) */
+    /* Libellés texte des boutons : cachés (état fermé) */
     #ctrl-tray .tool-btn > span:not([class]) {
       display:inline-block; max-width:0; overflow:hidden; opacity:0;
       transition:max-width .28s cubic-bezier(.25,.8,.25,1), opacity .2s ease;
@@ -1141,26 +1141,56 @@
       background:var(--surface-2); border:1px solid var(--line-strong);
       border-radius:8px; transition:all 0.13s; }
     #ctrl-outer .gcn-icon-btn:hover { background:var(--surface-3); filter:drop-shadow(0 0 5px rgba(232,185,78,.5)); }
-    /* Masquer le bouton flottant ?, remplacé par #introBtn dans le tray */
     .ai-btn { display:none !important; }
-    /* Zen mode : cacher tout le menu */
     body.zen #ctrl-outer { display:none !important; }
     /* Chevron : rotation selon état ouvert/fermé */
     #ctrl-trigger svg { transition:transform .28s cubic-bezier(.25,.8,.25,1); }
     #ctrl-trigger.on svg { transform:rotate(180deg); }
-    /* Recherche intégrée dans #ctrl-outer : ne pas hériter des règles flex de #top mobile */
-    #ctrl-outer .search-wrap { order:unset !important; flex:none !important; }
+
+    /* ── Recherche : TOUJOURS visible dans le tray, icône loupe inline ── */
+    #ctrl-tray .search-wrap {
+      display:inline-flex; align-items:center; gap:6px;
+      height:38px; padding:0 10px 0 12px; border-radius:8px;
+      background:var(--surface-2); border:1px solid var(--line-strong);
+      color:var(--ink-2); transition:border-color .13s,background .13s;
+      backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px);
+      position:relative; flex-shrink:0;
+      order:unset !important; flex:none !important; }
+    #ctrl-tray .search-wrap:focus-within { border-color:var(--ink-3); background:rgba(15,24,22,0.95); }
+    /* Masquer l'ancien SVG absolu (remplacé par .sw-icon inline) */
+    #ctrl-tray .search-wrap > svg:not(.sw-icon) { display:none !important; }
+    /* Icône loupe inline : toujours visible */
+    #ctrl-tray .search-wrap .sw-icon {
+      position:static !important; width:16px !important; height:16px !important;
+      flex-shrink:0; fill:none; stroke:currentColor !important;
+      stroke-width:2.5; stroke-linecap:round; pointer-events:none !important; }
+    /* Input : toujours visible, sans padding pour icône absolue */
+    #ctrl-tray .search-wrap #search {
+      width:190px !important; padding:9px 12px 9px 0 !important;
+      background:transparent !important; color:var(--ink);
+      border:none !important; outline:none; }
+    /* Dropdown #ac : z-index au-dessus de tout, largeur suffisante pour les vignettes */
+    #ctrl-tray .search-wrap #ac {
+      z-index:9300 !important; min-width:280px; }
     `; document.head.appendChild(s); })();
 
     // Créer le conteneur et le tray
     const outer = document.createElement('div'); outer.id = 'ctrl-outer';
     const tray  = document.createElement('div'); tray.id  = 'ctrl-tray';
-
-    // Barre de recherche : intégrée dans #ctrl-outer, toujours visible
-    const searchWrap = document.querySelector('.search-wrap');
-    if (searchWrap) outer.appendChild(searchWrap);
-
     outer.appendChild(tray);
+
+    // ── Recherche : premier élément du tray, toujours visible ──
+    const searchWrap = document.querySelector('.search-wrap');
+    if (searchWrap) {
+      // Icône loupe inline (remplace le SVG absolu)
+      const swIcon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      swIcon.setAttribute('viewBox', '0 0 24 24');
+      swIcon.setAttribute('aria-hidden', 'true');
+      swIcon.classList.add('sw-icon');
+      swIcon.innerHTML = '<circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/>';
+      searchWrap.insertBefore(swIcon, searchWrap.firstChild);
+      tray.appendChild(searchWrap);
+    }
 
     // Déplacer les boutons dans le tray (dans l'ordre voulu)
     ['introBtn', 'challengeBtn', 'spinBtn', 'centerBtn', 'textBtn'].forEach(id => {
