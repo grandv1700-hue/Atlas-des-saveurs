@@ -1103,32 +1103,81 @@
     } catch(ex) {}
   })();
 
-  // ── Barre d'outils repliable ──────────────────────────────────────────
-  (function initToolbarToggle() {
+  // ── Menu de boutons compact (déclencheur ⋯, déploiement horizontal) ────
+  (function initCtrlMenu() {
     (function(){ const s = document.createElement('style'); s.textContent = `
-    /* Replié : on cache les libellés texte (spans sans classe = labels) */
-    body.tb-collapsed .tool-btn > span:not([class]) { display:none !important; }
-    body.tb-collapsed .tool-btn:not(.tool-icon) { padding:0 11px !important; }
-    #toolbarToggle svg { transition:transform .25s; }
-    body.tb-collapsed #toolbarToggle svg { transform:rotate(180deg); }
+    /* Conteneur fixe haut-droite */
+    #ctrl-outer { position:fixed; top:8px; right:8px; z-index:9200;
+      display:flex; align-items:center; gap:5px; }
+    /* Tray animé */
+    #ctrl-tray { display:flex; align-items:center; gap:5px;
+      max-width:0; overflow:hidden;
+      transition:max-width .28s cubic-bezier(.25,.8,.25,1); }
+    #ctrl-tray.open { max-width:480px; }
+    /* Boutons dans le tray : icône seule */
+    #ctrl-tray .tool-btn > span:not([class]) { display:none !important; }
+    #ctrl-tray .tool-btn:not(.tool-icon) { padding:0 !important; width:38px !important; justify-content:center; flex-shrink:0; }
+    /* .title-help (bouton ?) adapté au tray */
+    #ctrl-tray > .title-help {
+      display:inline-flex !important; align-items:center; justify-content:center;
+      width:38px !important; height:38px !important;
+      padding:0; margin:0; flex-shrink:0;
+      background:var(--surface-2); border:1px solid var(--line-strong);
+      border-radius:8px; cursor:pointer; transition:all 0.13s;
+      color:var(--ink-2) !important; font-size:18px !important;
+      backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px);
+      vertical-align:unset; line-height:1; }
+    #ctrl-tray > .title-help:hover { color:var(--ink) !important; border-color:var(--ink-4); background:var(--surface-3); }
+    /* Carnet : toujours visible, adapté au conteneur */
+    #ctrl-outer .gcn-icon-btn { width:38px !important; height:38px !important;
+      vertical-align:unset !important; margin-left:0 !important;
+      background:var(--surface-2); border:1px solid var(--line-strong);
+      border-radius:8px; transition:all 0.13s; }
+    #ctrl-outer .gcn-icon-btn:hover { background:var(--surface-3); filter:drop-shadow(0 0 5px rgba(232,185,78,.5)); }
+    /* Masquer le bouton flottant ?, remplacé par #introBtn dans le tray */
+    .ai-btn { display:none !important; }
+    /* Zen mode : cacher tout le menu */
+    body.zen #ctrl-outer { display:none !important; }
     `; document.head.appendChild(s); })();
 
-    const btn = document.createElement('button');
-    btn.className = 'tool-btn tool-icon'; btn.id = 'toolbarToggle';
-    btn.title = 'Réduire / déplier la barre';
-    btn.innerHTML = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>`;
-    const ref = document.getElementById('challengeBtn');
-    if (ref) ref.insertAdjacentElement('afterend', btn);
+    // Créer le conteneur et le tray
+    const outer = document.createElement('div'); outer.id = 'ctrl-outer';
+    const tray  = document.createElement('div'); tray.id  = 'ctrl-tray';
+    outer.appendChild(tray);
 
-    const KEY = 'atlas_toolbar_v1';
-    function applyCollapse(on) {
-      document.body.classList.toggle('tb-collapsed', on);
-      try { localStorage.setItem(KEY, on ? '1' : '0'); } catch(e) {}
+    // Déplacer les boutons dans le tray (dans l'ordre voulu)
+    ['introBtn', 'challengeBtn', 'spinBtn', 'centerBtn', 'textBtn'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) tray.appendChild(el);
+    });
+
+    // Carnet : hors tray, badge toujours visible
+    const carnetEl = document.getElementById('gCarnetBtn');
+    if (carnetEl) outer.appendChild(carnetEl);
+
+    // Trigger ⋯
+    const trigger = document.createElement('button');
+    trigger.id = 'ctrl-trigger'; trigger.className = 'tool-btn tool-icon';
+    trigger.title = 'Outils'; trigger.setAttribute('aria-label', 'Ouvrir / fermer les outils');
+    trigger.innerHTML = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><circle cx="5" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="19" cy="12" r="1.2"/></svg>`;
+    outer.appendChild(trigger);
+    document.body.appendChild(outer);
+
+    const KEY = 'atlas_ctrlmenu_v1';
+    let isOpen = false;
+    function setOpen(v) {
+      isOpen = v;
+      tray.classList.toggle('open', v);
+      trigger.classList.toggle('on', v);
+      try { localStorage.setItem(KEY, v ? '1' : '0'); } catch(ex) {}
     }
-    btn.onclick = () => applyCollapse(!document.body.classList.contains('tb-collapsed'));
+    trigger.onclick = (e) => { e.stopPropagation(); setOpen(!isOpen); };
+    document.addEventListener('click', (e) => {
+      if (isOpen && !outer.contains(e.target)) setOpen(false);
+    });
     let init = false;
-    try { init = localStorage.getItem(KEY) === '1'; } catch(e) {}
-    applyCollapse(init);
+    try { init = localStorage.getItem(KEY) === '1'; } catch(ex) {}
+    setOpen(init);
   })();
 
   // ── Fiche d'accord ────────────────────────────────────────────────────
