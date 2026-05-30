@@ -677,16 +677,22 @@
 
   /* ── Loader ──────────────────────────────────── */
   #loader {
-    position: fixed; inset: 0; z-index: 20; display: flex;
-    align-items: center; justify-content: center; flex-direction: column; gap: 14px;
-    background: var(--bg); transition: opacity 0.5s; 
+    position:fixed; inset:0; z-index:99999; display:flex;
+    align-items:center; justify-content:center; flex-direction:column; gap:20px;
+    background:#08100F; transition:opacity .55s ease;
   }
-  #loader.gone { opacity: 0; pointer-events: none; }
-  #loader .lt { font-family: var(--display); font-weight: 800; font-size: 34px; text-transform: uppercase; color: var(--ink); letter-spacing: 0.02em; }
-  #loader .ls { font-family: var(--mono); font-size: 11px; color: var(--ink-3); letter-spacing: 0.1em; text-transform: uppercase; }
-  #loader .bar { width: 180px; height: 2px; background: var(--surface-3); border-radius: 2px; overflow: hidden; }
-  #loader .bar i { display: block; height: 100%; width: 40%; background: var(--accent); border-radius: 2px; animation: slide 1s ease-in-out infinite; }
-  @keyframes slide { 0%{transform:translateX(-100%)} 100%{transform:translateX(350%)} }
+  #loader.gone { opacity:0; pointer-events:none; }
+  /* Logo version claire : invert rend le sombre→blanc, hue-rotate(180°) ramène rouge→rouge */
+  #loader .ld-logo { width:110px; height:auto;
+    filter:invert(1) hue-rotate(180deg); opacity:.9; }
+  #loader .ld-title { font-family:var(--display); font-weight:900; font-size:30px;
+    text-transform:uppercase; letter-spacing:.03em; color:var(--ink); }
+  #loader .ld-spin { width:28px; height:28px;
+    border:2px solid rgba(220,221,178,.13); border-top-color:#E8B94E;
+    border-radius:50%; animation:ld-spin .75s linear infinite; }
+  @keyframes ld-spin { to { transform:rotate(360deg); } }
+  #loader .ld-msg { font-family:var(--mono); font-size:10.5px;
+    letter-spacing:.1em; text-transform:uppercase; color:rgba(220,221,178,.38); }
 
   /* ── Mobile ──────────────────────────────────── */
   @media (max-width: 640px) {
@@ -775,9 +781,10 @@
   </div>
 
   <div id="loader">
-    <div class="lt">Atlas des Saveurs</div>
-    <div class="bar"><i></i></div>
-    <div class="ls">Constellation aromatique…</div>
+    <img class="ld-logo" src="logo-lrv.svg" alt="La Réserve de Val">
+    <div class="ld-title">Atlas des Saveurs</div>
+    <div class="ld-spin"></div>
+    <div class="ld-msg">Chargement de la carte…</div>
   </div>
 
   <script src="epicure-data.js"></script>

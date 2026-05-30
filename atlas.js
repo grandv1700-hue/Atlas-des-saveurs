@@ -1320,5 +1320,9 @@
     }
   })();
 
-  setTimeout(() => document.getElementById('loader').classList.add('gone'), 380);
+  // Retirer le loader après le 1er rendu réel du canvas (double rAF = frame peinte à l'écran)
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    const el = document.getElementById('loader');
+    if (el) el.classList.add('gone');
+  }));
 })();
