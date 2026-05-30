@@ -1257,15 +1257,17 @@
       tray.appendChild(searchWrap);
     }
 
-    // Déplacer les boutons dans le tray (dans l'ordre voulu)
-    ['introBtn', 'challengeBtn', 'spinBtn', 'centerBtn', 'textBtn'].forEach(id => {
+    // Déplacer les boutons dans le tray — ordre aligné sur le tuto
+    // "?" à l'extrémité gauche, puis flux tuto : Centrer → Texte → Défi → Carnet
+    // Langue vient après (ajouté dans le bloc ATLAS_LANG), Rotation en dernier.
+    ['introBtn', 'centerBtn', 'textBtn', 'challengeBtn'].forEach(id => {
       const el = document.getElementById(id);
       if (el) tray.appendChild(el);
     });
 
-    // Carnet : hors tray, badge toujours visible
+    // Carnet : dans le tray (badge toujours visible, pas affecté par les libellés)
     const carnetEl = document.getElementById('gCarnetBtn');
-    if (carnetEl) outer.appendChild(carnetEl);
+    if (carnetEl) tray.appendChild(carnetEl);
 
     // Trigger chevron (< fermé → > ouvert après rotation 180°)
     const trigger = document.createElement('button');
@@ -1360,6 +1362,10 @@
         document.body.appendChild(menu);
       })();
     }
+
+    // Rotation : dernier bouton du tray (dernière étape du tuto)
+    const spinEl = document.getElementById('spinBtn');
+    if (spinEl) tray.appendChild(spinEl);
   })();
 
   // ── Fiche d'accord ────────────────────────────────────────────────────
