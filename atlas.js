@@ -811,11 +811,29 @@
 
   // ── Carnet de découvertes ─────────────────────────────────────────────
   (function initCarnet() {
+    // CSS icône + badge
+    (function(){ const s = document.createElement('style');
+      s.textContent = `
+      .gcn-icon-btn { position:relative; display:inline-flex; align-items:center;
+        justify-content:center; width:20px; height:20px; vertical-align:4px;
+        margin-left:7px; color:var(--signature,#E8B94E); border:0; background:transparent;
+        padding:0; cursor:pointer; transition:filter .15s;
+        filter:drop-shadow(0 0 3px rgba(232,185,78,.35)); }
+      .gcn-icon-btn:hover { filter:drop-shadow(0 0 6px rgba(232,185,78,.65)); }
+      .gcn-badge { position:absolute; top:-5px; right:-7px; min-width:14px; height:14px;
+        background:var(--signature,#E8B94E); color:#08100F;
+        font:700 9px/14px var(--mono,monospace); border-radius:7px; padding:0 3px;
+        text-align:center; display:none; }
+      .gcn-badge.on { display:block; }`;
+      document.head.appendChild(s); })();
+
     // Bouton dans la barre de titre
     const titleEl = document.querySelector('.title');
     const carnetBtn = document.createElement('button');
-    carnetBtn.className = 'title-help'; carnetBtn.id = 'gCarnetBtn';
+    carnetBtn.className = 'gcn-icon-btn'; carnetBtn.id = 'gCarnetBtn';
     carnetBtn.title = 'Carnet de découvertes';
+    carnetBtn.setAttribute('aria-label', 'Carnet de découvertes');
+    carnetBtn.innerHTML = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg><span class="gcn-badge" aria-hidden="true"></span>`;
     titleEl.insertBefore(carnetBtn, document.getElementById('introBtn'));
 
     // Modal
@@ -871,7 +889,8 @@
 
     updateCarnetBtn = function() {
       const n = EPICURE_GAME.carnetCount();
-      carnetBtn.textContent = n > 0 ? `Carnet (${n})` : 'Carnet';
+      const badge = carnetBtn.querySelector('.gcn-badge');
+      if (badge) { badge.textContent = n || ''; badge.classList.toggle('on', n > 0); }
     };
     updateCarnetBtn();
   })();
