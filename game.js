@@ -103,56 +103,6 @@ window.EPICURE_GAME = (function () {
     Seed:'texture & gras', Pantry:'assaisonnement'
   };
 
-  // Règles triées par spécificité (plus de catégories requis = plus précis)
-  const USAGE_RULES = [
-    { n:['Meat','Fat/Oil','Herb'],    t:['marinade / poêlée', 'rôti aux herbes'] },
-    { n:['Fish','Herb'],              t:['tartare / ceviche', 'poisson poêlé aux herbes'] },
-    { n:['Seafood','Herb'],           t:['fruits de mer aux herbes', 'salade marine fraîche'] },
-    { n:['Grain','Vegetable','Spice'],t:['plat complet épicé', 'riz / couscous parfumé'] },
-    { n:['Meat','Spice'],             t:['viande épicée / curry', 'brochettes marinées'] },
-    { n:['Meat','Dairy'],             t:['sauce à la crème', 'gratin de viande'] },
-    { n:['Meat','Grain'],             t:['plat complet', 'gratin / tian'] },
-    { n:['Fish','Dairy'],             t:['sauce crémeuse', 'gratin de poisson'] },
-    { n:['Fish','Spice'],             t:['poisson épicé', 'tajine de poisson'] },
-    { n:['Seafood','Dairy'],          t:['bisque crémeuse', 'gratin de fruits de mer'] },
-    { n:['Vegetable','Herb','Fat/Oil'],t:['légumes rôtis aux herbes', 'salade verte'] },
-    { n:['Vegetable','Spice'],        t:['légumes épicés', 'curry végétarien'] },
-    { n:['Legume','Spice'],           t:['dal / ragoût épicé', 'houmous aromatisé'] },
-    { n:['Grain','Vegetable'],        t:['potage / grain bowl', 'plat végétarien'] },
-    { n:['Fruit','Dairy'],            t:['dessert fruité', 'fromage & fruit'] },
-    { n:['Fruit','Spice'],            t:['chutney / confiture épicée', 'dessert exotique'] },
-    { n:['Dairy','Herb'],             t:['fromage aux herbes', 'sauce blanche fraîche'] },
-    { n:['Sweet','Dairy'],            t:['dessert lacté', 'crème / mousse'] },
-    { n:['Fat/Oil','Herb'],           t:['huile aromatisée', 'vinaigrette maison'] },
-    { n:['Nut/Seed','Dairy'],         t:['fromage aux noix', 'sauce aux noix'] },
-    { n:['Grain','Spice'],            t:['riz / couscous parfumé', 'boulgour épicé'] },
-    // fallbacks mono-catégorie
-    { n:['Fish'],      t:['filet au beurre', 'poisson vapeur citronné'] },
-    { n:['Seafood'],   t:['fruits de mer grillés', 'bisque légère'] },
-    { n:['Meat'],      t:['viande sautée', 'rôti / braisé'] },
-    { n:['Vegetable'], t:['légumes rôtis', 'sauté au wok'] },
-    { n:['Grain'],     t:['riz / pâtes', 'céréales en salade'] },
-    { n:['Dairy'],     t:['sauce blanche / crème', 'fromage fondu'] },
-    { n:['Fruit'],     t:['compote / coulis', 'salade de fruits'] },
-    { n:['Herb'],      t:['herbes en assaisonnement', 'pesto / chimichurri'] },
-    { n:['Spice'],     t:['mélange d\'épices', 'épice en fond de sauce'] },
-    { n:['Legume'],    t:['ragoût de légumineuses', 'légumes secs en salade'] },
-    { n:['Sweet'],     t:['dessert', 'sauce sucrée'] },
-  ];
-
-  function buildUsages(cats) {
-    const tips = [];
-    const sorted = [...USAGE_RULES].sort((a, b) => b.n.length - a.n.length);
-    for (const rule of sorted) {
-      if (rule.n.every(c => cats.has(c))) {
-        for (const t of rule.t) { if (!tips.includes(t)) tips.push(t); }
-        if (tips.length >= 2) break;
-      }
-    }
-    if (!tips.length) tips.push('accord libre à explorer', 'à tester en cuisine');
-    return tips.slice(0, 2);
-  }
-
   function platFiche(sel) {
     const q = [...new Set(sel)].filter(i => i >= 0);
     if (q.length < 2) return null;
@@ -179,8 +129,7 @@ window.EPICURE_GAME = (function () {
       }
       // s < 20 et harmonie faible : rien (accord sans intérêt particulier à signaler)
     }
-    const cats = new Set(q.map(i => PTS[i].c));
-    return { G, V, ingredients, boldText, usages: buildUsages(cats) };
+    return { G, V, ingredients, boldText };
   }
 
   // ── Défi du jour ──────────────────────────────────────────────────────

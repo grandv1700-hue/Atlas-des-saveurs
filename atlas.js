@@ -386,9 +386,6 @@
     .af-role { display:flex; gap:8px; font-size:13px; }
     .af-rname { color:var(--ink,#DCDDB2); font-weight:600; }
     .af-rval  { color:#8fa89c; }
-    .af-tips { display:flex; flex-direction:column; gap:5px; }
-    .af-tip { font-size:13px; color:#c8d8cc; }
-    .af-tip::before { content:'· '; color:#7f9a8f; }
     .af-foot { display:flex; gap:10px; margin-top:18px; }
     .af-share { flex:1; padding:10px 0; border:none; border-radius:10px;
       background:var(--signature,#E8B94E); color:#08100F;
@@ -1391,7 +1388,6 @@
     const rolesHtml = F.ingredients.map(ig =>
       `<div class="af-role"><span class="af-rname">${ig.e} ${ig.fr}</span><span class="af-rval">→ ${ig.role}</span></div>`
     ).join('');
-    const tipsHtml = F.usages.map(u => `<div class="af-tip">${u}</div>`).join('');
     const nIng = F.ingredients.length;
     ficheOv.querySelector('#afContent').innerHTML = `
       <div class="af-h1">${t('fiche_title')}</div>
@@ -1406,10 +1402,6 @@
       <div class="af-section">
         <div class="af-sh">${t('fiche_roles')}</div>
         <div class="af-roles">${rolesHtml}</div>
-      </div>
-      <div class="af-section">
-        <div class="af-sh">${t('fiche_uses')}</div>
-        <div class="af-tips">${tipsHtml}</div>
       </div>
       <div class="af-foot">
         <button class="af-share" id="afShare">${t('fiche_share')}</button>
