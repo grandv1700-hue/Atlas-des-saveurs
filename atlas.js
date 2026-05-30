@@ -848,7 +848,7 @@
   };
 
   // ── Loop ─────────────────────────────────────────────────────────────
-  function tick() { if (autorot) { ay += 0.0032; draw(); } requestAnimationFrame(tick); }
+  function tick() { if (autorot) { ay += 0.0016; draw(); } requestAnimationFrame(tick); }
 
   // ── Boot ─────────────────────────────────────────────────────────────
   window.addEventListener('resize', () => { rs(); buildBg(); draw(); });

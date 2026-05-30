@@ -78,7 +78,8 @@
     }
   }
 
-  // ── Animation d'intro : saisie "chocolat" + sélection + 2e ingrédient ──
+  // ── Animation d'intro : saisie "chocolat" + sélection (1er ingrédient seulement) ──
+  // Le 2e ingrédient est ajouté à l'arrivée de l'étape 1, pas ici.
   function playIntroDemo(onDone) {
     demoAborted = false;
     const WORD = 'chocolat';
@@ -93,10 +94,10 @@
 
     function typeNext() {
       if (demoAborted) return;
-      if (charIdx >= WORD.length) { setTimeout(pickResult, 420); return; }
+      if (charIdx >= WORD.length) { setTimeout(pickResult, 600); return; }
       sbox.value += WORD[charIdx++];
       sbox.dispatchEvent(new Event('input', { bubbles: true }));
-      setTimeout(typeNext, 95);
+      setTimeout(typeNext, 150);
     }
 
     function pickResult() {
@@ -115,24 +116,14 @@
         sbox.value = '';
         sbox.dispatchEvent(new Event('input', { bubbles: true }));
       }
-      setTimeout(addSecond, 650);
-    }
-
-    function addSecond() {
-      if (demoAborted) return;
-      const PTS = window.EPICURE && window.EPICURE.PTS;
-      if (PTS && window.select) {
-        const idx = PTS.findIndex(p => p.fr.toLowerCase() === 'orange');
-        if (idx >= 0) window.select(idx);
-      }
       setTimeout(() => {
         if (demoAborted) return;
         setFocus(null);
         onDone();
-      }, 750);
+      }, 800);
     }
 
-    setTimeout(typeNext, 500);
+    setTimeout(typeNext, 700);
   }
 
   // ── Helpers d'action réelle (clics sur les vrais boutons) ─────────────
@@ -167,6 +158,16 @@
     if (btn && !btn.classList.contains('disabled') && !btn.classList.contains('on')) btn.click();
   }
 
+  // Ajouter le 2e ingrédient (orange) à l'arrivée de l'étape "combinaison"
+  function autoAddSecond() {
+    if (document.querySelectorAll('#panel .qchip').length >= 2) return;
+    const PTS = window.EPICURE && window.EPICURE.PTS;
+    if (PTS && window.select) {
+      const idx = PTS.findIndex(p => p.fr.toLowerCase() === 'orange');
+      if (idx >= 0) window.select(idx);
+    }
+  }
+
   // Ouvrir le menu langue (si langBtn existe)
   function autoOpenLang() {
     const btn = document.getElementById('langBtn');
@@ -187,7 +188,7 @@
     const T = window.t || (k => k);
     return [
       { title: T('tuto_s0_title'), body: T('tuto_s0_body'), targetId: 'searchWrapBtn', onAdvance: () => ensureN(1) },
-      { title: T('tuto_s1_title'), body: T('tuto_s1_body'), targetId: 'searchWrapBtn', onAdvance: () => ensureN(2) },
+      { title: T('tuto_s1_title'), body: T('tuto_s1_body'), targetId: 'searchWrapBtn', onEnter: autoAddSecond, onAdvance: () => ensureN(2) },
       { title: T('tuto_s2_title'), body: T('tuto_s2_body'), targetId: 'leg', onEnter: autoFilterCat, onAdvance: resetCatFilter },
       { title: T('tuto_s3_title'), body: T('tuto_s3_body'), targetId: 'centerBtn', onEnter: autoCenter, onAdvance: null },
       { title: T('tuto_s4_title'), body: T('tuto_s4_body'), targetId: 'textBtn', onAdvance: null },
