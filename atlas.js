@@ -60,6 +60,7 @@
   let updateCarnetBtn = () => {}, showToast = () => {}, updateChallengeBtn = () => {};
   let acIdx = -1;     // index surligné dans la liste de suggestions (-1 = aucun)
   let ficheOv = null; // modale fiche d'accord (créée à la demande)
+  let prevNotable = false; // pour détecter le passage du seuil "fiche débloquée"
   let textScale = (() => { const v = parseFloat(localStorage.getItem('atlas_textscale')); return (v >= 1 && v <= 2) ? v : 1; })();
   const mq = window.matchMedia('(max-width: 640px)');
   const isMobile = () => mq.matches;
@@ -393,6 +394,9 @@
       background:transparent; color:#DCDDB2;
       font:600 13px/1 -apple-system,sans-serif; cursor:pointer; transition:border-color .15s; }
     .af-close:hover { border-color:#2a3a37; }
+    .ggate { font-family:var(--mono); font-size:10px; color:var(--ink-3);
+      margin-top:9px; letter-spacing:.04em; text-align:center;
+      padding:6px 10px; border:1px dashed rgba(255,255,255,.1); border-radius:7px; }
     `;
     document.head.appendChild(s);
   })();
@@ -403,14 +407,16 @@
 
   function scoreHeader(G) {
     const V = EPICURE_GAME.chefVerdict(G);
+    const notable = V.stars >= 2 || G.pepite;
     const stars = '★'.repeat(V.stars) + '☆'.repeat(3 - V.stars);
     const pep = G.pepite ? ' <span class="gpep">✨ Pépite</span>' : '';
     const hv = G.harmonyVerdict, sv = G.surpriseVerdict;
     const weak = G.weakest ? `<div class="gnote">Maillon faible : ${PTS[G.weakest.i].fr} × ${PTS[G.weakest.j].fr}</div>` : '';
     const find = (G.bold && G.bold.s > 0) ? `<div class="gnote">Trouvaille : ${PTS[G.bold.i].fr} × ${PTS[G.bold.j].fr}</div>` : '';
-    const pinBtn = (V.stars >= 2 || G.pepite)
-      ? `<button class="gpin-btn" id="gPinBtn">+ Épingler au carnet</button>` : '';
-    const ficheBtn = `<button class="gfiche-btn" id="gFicheBtn">Fiche d'accord ↗</button>`;
+    const actionBtns = notable
+      ? `<button class="gfiche-btn" id="gFicheBtn">Voir la fiche ↗</button>
+         <button class="gpin-btn" id="gPinBtn">+ Épingler au carnet</button>`
+      : `<div class="ggate">Encore un cran pour débloquer la fiche →</div>`;
     return `<div class="gscore">
       <div class="gverdict"><span class="gstars">${stars}</span> <span class="gtitle">${V.title}</span>${pep}</div>
       <div class="gaxis">
@@ -425,14 +431,16 @@
         <div class="gbar"><div class="gbar-fill" style="width:${G.surprise}%;background:${sv.color}"></div></div>
         ${find}
       </div>
-      ${pinBtn}
-      ${ficheBtn}
+      ${actionBtns}
     </div>`;
   }
 
   function renderForce() {
     const G = window.EPICURE_GAME ? EPICURE_GAME.compositionScore(query) : null;
-    if (!G) return '';
+    if (!G) { prevNotable = false; return ''; }
+    const nowNotable = EPICURE_GAME.chefVerdict(G).stars >= 2 || G.pepite;
+    if (nowNotable && !prevNotable) showToast('✨ Fiche débloquée !');
+    prevNotable = nowNotable;
     let detail = '';
     if (query.length >= 3) {
       const cells = [];
