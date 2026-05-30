@@ -77,28 +77,63 @@
     }
   }
 
-  // ── Étapes (tout manuel — "Suivant" ou "Passer") ──────────────────────
-  // onAdvance : appelé AVANT d'afficher l'étape SUIVANTE (garantit l'état nécessaire).
+  // ── Helpers d'action réelle (clics sur les vrais boutons) ─────────────
+
+  // Filtrer par catégorie : ouvre la légende si repliée, clique le premier item si rien n'est filtré
+  function autoFilterCat() {
+    const legEl = document.getElementById('leg');
+    if (legEl && legEl.classList.contains('collapsed')) legEl.classList.remove('collapsed');
+    const legReset = document.getElementById('legReset');
+    if (legReset && legReset.classList.contains('hidden')) {
+      const firstItem = document.querySelector('#leg .leg-item');
+      if (firstItem) firstItem.click();
+    }
+  }
+
+  // Réinitialiser le filtre catégorie (nettoyage entre étapes)
+  function resetCatFilter() {
+    const legReset = document.getElementById('legReset');
+    if (legReset && !legReset.classList.contains('hidden')) legReset.click();
+  }
+
+  // Lancer la rotation si elle est arrêtée
+  function autoSpin() {
+    const btn = document.getElementById('spinBtn');
+    if (btn && !btn.classList.contains('on')) btn.click();
+  }
+
+  // Centrer sur la sélection si pas encore centré et sélection non vide
+  function autoCenter() {
+    const btn = document.getElementById('centerBtn');
+    if (btn && !btn.classList.contains('disabled') && !btn.classList.contains('on')) btn.click();
+  }
+
+  // ── Étapes ────────────────────────────────────────────────────────────
+  // onEnter  : déclenché à l'ARRIVÉE sur l'étape (démo auto si pas encore fait)
+  // onAdvance: déclenché au clic "Suivant" (garantit l'état pour l'étape suivante)
   const STEPS = [
     { title: 'Rechercher un ingrédient',
       body: 'Tape un nom dans la barre de recherche, ou clique directement un point du nuage pour l\'ajouter à ta sélection.',
       targetId: 'search',
-      onAdvance: () => ensureN(1) },   // avant "Composer" : au moins 1 sélectionné
+      onAdvance: () => ensureN(1) },
     { title: 'Explorer une combinaison',
       body: 'Ajoutes-en un deuxième — le Score de la combinaison (Harmonie + Surprise) apparaît dans le panneau de droite.',
       targetId: 'search',
-      onAdvance: () => ensureN(2) },   // avant "Filtrer" : duo entier (score visible)
+      onAdvance: () => ensureN(2) },
     { title: 'Filtrer par catégorie',
       body: 'Clique un item dans la légende (bas gauche) pour n\'afficher qu\'une famille d\'ingrédients et lire leurs noms sur la carte.',
       targetId: 'leg',
-      onAdvance: null },
+      onEnter:   autoFilterCat,
+      onAdvance: resetCatFilter },
     { title: 'Rotation automatique',
       body: 'Ce bouton lance ou arrête la rotation 3D. Utile pour explorer l\'ensemble du nuage.',
       targetId: 'spinBtn',
+      onEnter:   autoSpin,
       onAdvance: null },
     { title: 'Centrer la vue',
       body: 'Recadre la carte sur les ingrédients de ta sélection courante.',
       targetId: 'centerBtn',
+      onEnter:   autoCenter,
       onAdvance: null },
     { title: 'Taille du texte',
       body: 'Ajuste la taille des labels affichés sur la carte — pratique sur grand écran ou mobile.',
@@ -144,8 +179,9 @@
     document.getElementById('atbNext').textContent  = n === STEPS.length - 1 ? 'Terminer ✓' : 'Suivant →';
     setFocus(s.targetId);
     bub.classList.add('show');
-    // Scroll l'élément dans le viewport si hors-écran
     if (focusEl) focusEl.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    // Déclencher l'action de démo à l'arrivée sur cette étape
+    if (s.onEnter) s.onEnter();
   }
 
   function advance() {
@@ -163,6 +199,8 @@
     step = -1;
     seen = true;
     try { localStorage.setItem(SEEN_KEY, '1'); } catch (e) {}
+    // Terminer sur la carte en rotation
+    autoSpin();
   }
 
   function start() {
