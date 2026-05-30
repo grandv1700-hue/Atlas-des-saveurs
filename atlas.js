@@ -488,6 +488,7 @@
       }, 40);
     }
     prevPepite = nowPepite;
+    if (window.ATLAS_BADGES) window.ATLAS_BADGES.onCompose(G, [...query]);
     let detail = '';
     if (query.length >= 3) {
       const cells = [];
@@ -562,6 +563,7 @@
         const res = EPICURE_GAME.carnetAdd(names, G);
         if (res.added) {
           updateCarnetBtn();
+          if (window.ATLAS_BADGES) window.ATLAS_BADGES.onCarnetAdd();
           showToast('Ajouté au carnet ✓');
           pinEl.textContent = '✓ Épinglé'; pinEl.disabled = true;
         } else {
@@ -579,6 +581,7 @@
       if (query.includes(imp) && query.length >= 2) {
         EPICURE_GAME.dailySubmit(ds, [...query]);
         updateChallengeBtn();
+        if (window.ATLAS_BADGES) window.ATLAS_BADGES.onDaily();
       }
     }
   }
@@ -851,6 +854,7 @@
     clearTimeout(_toastTimer);
     _toastTimer = setTimeout(() => _toastEl.classList.remove('show'), duration || 2200);
   };
+  window.showToast = showToast; // expose pour les modules externes
 
   // ── Carnet de découvertes ─────────────────────────────────────────────
   (function initCarnet() {
@@ -915,6 +919,7 @@
           };
         });
       }
+      if (window.ATLAS_BADGES) window.ATLAS_BADGES.renderBadgesIn(carnetOv);
       carnetOv.style.display = 'flex';
       requestAnimationFrame(() => carnetOv.classList.add('show'));
     }
