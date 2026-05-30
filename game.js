@@ -24,9 +24,9 @@ window.EPICURE_GAME = (function () {
     return Math.max(0, Math.min(100, Math.round(raw / NORM * 100)));
   }
   function surpriseVerdict(s) {
-    if (s >= 70) return { color: '#E8B94E', label: 'pépite' };
-    if (s >= 45) return { color: '#E0B255', label: 'audacieux' };
-    if (s >= 20) return { color: '#9BD6A8', label: 'un peu osé' };
+    if (s >= 45) return { color: '#E8B94E', label: 'pépite' };
+    if (s >= 28) return { color: '#E0B255', label: 'audacieux' };
+    if (s >= 15) return { color: '#9BD6A8', label: 'un peu osé' };
     return { color: '#7d7e60', label: 'sage' };
   }
 
@@ -41,23 +41,23 @@ window.EPICURE_GAME = (function () {
       const s = pairSurprise(q[a], q[b]);
       if (s > maxS) { maxS = s; bold = { i: q[a], j: q[b], s }; }
     }
-    const harmony = Math.round(minF * 100);   // cohésion = maillon faible
+    const avgF  = sumF / nP;
+    const blend = 0.6 * minF + 0.4 * avgF;    // maillon faible pèse plus, moyenne adoucit
+    const harmony = Math.round(blend * 100);
     const surprise = Math.max(0, maxS);
     return {
-      harmony, harmonyVerdict: PR.strengthColor(minF), weakest,
+      harmony, harmonyVerdict: PR.strengthColor(blend), weakest,
       surprise, surpriseVerdict: surpriseVerdict(surprise), bold,
-      avg: Math.round(sumF / nP * 100),
-      pepite: (minF >= 0.25) && (surprise >= 60)   // tient ET ose
+      avg: Math.round(avgF * 100),
+      pepite: (blend >= 0.30) && (surprise >= 45)  // tient ET ose
     };
   }
 
-  // ── Verdict de chef (barème sur harmonie + surprise) ──────────────────
-  // Aligné sur strengthColor : faible<25 / correct 25-31 / bon 32-39 / excellent 40+
+  // ── Verdict de chef ────────────────────────────────────────────────────
   function chefVerdict(G) {
     if (!G || G.harmony < 25) return { stars: 0, title: 'Le plat ne tient pas' };
-    if (G.pepite || (G.harmony >= 40 && G.surprise >= 45)) return { stars: 3, title: 'Coup de génie' };
-    if (G.harmony >= 32) return { stars: 2, title: 'Belle assiette' };   // bon accord = épingnable
-    if (G.surprise >= 30) return { stars: 2, title: 'Audacieux' };       // surprise seule, même si correct
+    if (G.pepite || (G.harmony >= 40 && G.surprise >= 28)) return { stars: 3, title: 'Coup de génie' };
+    if (G.harmony >= 32) return { stars: 2, title: 'Belle assiette' };
     return { stars: 1, title: 'Correct' };
   }
 
