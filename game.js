@@ -163,11 +163,21 @@ window.EPICURE_GAME = (function () {
       catFR: catFRG(PTS[i].c), role: ROLE_MAP[PTS[i].c] || catFRG(PTS[i].c)
     }));
     let boldText = null;
-    if (G.bold && G.bold.s > 0) {
+    if (G.bold) {
       const A = PTS[G.bold.i], B = PTS[G.bold.j];
-      boldText = A.c === B.c
-        ? `${A.fr} et ${B.fr} partagent une forte affinité aromatique au sein de la même famille (${catFRG(A.c)}).`
-        : `${A.fr} (${catFRG(A.c)}) et ${B.fr} (${catFRG(B.c)}) ont une forte affinité aromatique malgré des univers éloignés.`;
+      const s = G.bold.s, sameCat = A.c === B.c;
+      if (s >= 45) {
+        boldText = sameCat
+          ? `${A.fr} et ${B.fr} partagent une forte parenté aromatique — une surprise dans leur propre famille.`
+          : `${A.fr} (${catFRG(A.c)}) et ${B.fr} (${catFRG(B.c)}) ont une forte affinité aromatique malgré des univers éloignés.`;
+      } else if (s >= 20) {
+        boldText = sameCat
+          ? `${A.fr} et ${B.fr} s'accordent bien dans leur famille (${catFRG(A.c)}).`
+          : `${A.fr} et ${B.fr} se marient bien au-delà de leurs catégories.`;
+      } else if (G.harmony >= 32) {
+        boldText = `${A.fr} et ${B.fr} forment un accord classique — ils se marient naturellement.`;
+      }
+      // s < 20 et harmonie faible : rien (accord sans intérêt particulier à signaler)
     }
     const cats = new Set(q.map(i => PTS[i].c));
     return { G, V, ingredients, boldText, usages: buildUsages(cats) };
