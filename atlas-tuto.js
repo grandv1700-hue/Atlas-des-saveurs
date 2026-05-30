@@ -1,6 +1,6 @@
-// atlas-tuto.js — tutoriel guidé première utilisation de l'Atlas des Saveurs
-// KLE / La Réserve de Val. AUTONOME : injecte ses styles, sa bulle, son observer.
-// À charger APRÈS atlas-intro.js. Expose window.ATLAS_TUTO = { start, finish }.
+// atlas-tuto.js — tutoriel guidé (démo des contrôles, avancement manuel)
+// KLE / La Réserve de Val. AUTONOME. À charger APRÈS atlas-intro.js.
+// Expose window.ATLAS_TUTO = { start, finish }.
 (function () {
   const SEEN_KEY = 'atlas_tuto_seen_v1';
   let seen = false;
@@ -16,10 +16,13 @@
     color:#DCDDB2; font-family:-apple-system,BlinkMacSystemFont,sans-serif;
     box-shadow:0 16px 40px rgba(0,0,0,.5); display:none; }
   .atb.show { display:block; animation:atb-in .25s ease; }
-  @keyframes atb-in { from { opacity:0; transform:translateX(-50%) translateY(10px); } to { opacity:1; transform:translateX(-50%) translateY(0); } }
+  @keyframes atb-in { from { opacity:0; transform:translateX(-50%) translateY(10px); }
+                      to   { opacity:1; transform:translateX(-50%) translateY(0); } }
   .atb-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
-  .atb-title { font:700 14px/1.2 Impact,Haettenschweiler,sans-serif; letter-spacing:.5px; color:#fff; text-transform:uppercase; }
-  .atb-step { font-family:var(--mono,monospace); font-size:9.5px; color:#7f9a8f; text-transform:uppercase; letter-spacing:.08em; }
+  .atb-title { font:700 14px/1.2 Impact,Haettenschweiler,sans-serif;
+    letter-spacing:.5px; color:#fff; text-transform:uppercase; }
+  .atb-step { font-family:var(--mono,monospace); font-size:9.5px;
+    color:#7f9a8f; text-transform:uppercase; letter-spacing:.08em; }
   .atb-body { font-size:13.5px; line-height:1.55; color:#c8d8cc; margin:0 0 14px; }
   .atb-foot { display:flex; align-items:center; gap:10px; }
   .atb-next { flex:1; padding:9px 0; border:none; border-radius:9px;
@@ -29,12 +32,16 @@
   .atb-skip { background:none; border:none; color:#7f9a8f; font-size:12px;
     cursor:pointer; padding:0; transition:color .15s; white-space:nowrap; }
   .atb-skip:hover { color:#DCDDB2; }
-  .tuto-focus { outline:2px solid var(--accent,#E8B94E) !important;
-    outline-offset:4px; border-radius:6px !important;
+  /* Halo sur l'élément pointé */
+  .tuto-focus { outline:2px solid var(--signature,#E8B94E) !important;
+    outline-offset:5px; border-radius:6px !important;
+    box-shadow:0 0 0 8px rgba(232,185,78,.10) !important;
     animation:tuto-pulse 1.8s ease-in-out infinite; }
   @keyframes tuto-pulse {
-    0%,100% { outline-color:var(--accent,#E8B94E); }
-    50%      { outline-color:rgba(232,185,78,.2); }
+    0%,100% { outline-color:var(--signature,#E8B94E);
+              box-shadow:0 0 0 8px rgba(232,185,78,.10); }
+    50%      { outline-color:rgba(232,185,78,.3);
+              box-shadow:0 0 0 14px rgba(232,185,78,.03); }
   }
   .atb-replay { display:block; width:100%; margin-top:10px; padding:9px;
     border:1px solid #1c2a25; border-radius:9px; background:transparent;
@@ -45,25 +52,29 @@
   `;
   document.head.appendChild(st);
 
-  // ── Steps ─────────────────────────────────────────────────────────────
-  // advance : 'chips:N' = auto quand N chips dans #panel | 'manual' = Suivant seulement
+  // ── Étapes (tout manuel — "Suivant" ou "Passer") ──────────────────────
   const STEPS = [
-    { title: 'Explorer la carte',
-      body: 'Clique un point dans le nuage, ou tape un nom dans la barre de recherche.',
-      targetId: 'search',
-      advance: 'chips:1' },
-    { title: 'Compose un duo',
-      body: 'Ajoutes-en un deuxième pour voir leurs accords communs.',
-      targetId: 'panel',
-      advance: 'chips:2' },
-    { title: 'Score du plat',
-      body: 'Harmonie mesure si la combinaison tient. Surprise récompense les accords audacieux. Un accord ★★ ou plus peut être épinglé au Carnet.',
-      targetId: 'panel',
-      advance: 'manual' },
-    { title: 'Carnet de découvertes',
-      body: 'Bouton Carnet en haut à gauche — tes meilleures trouvailles. Clique une entrée pour recharger le plat.',
-      targetId: 'gCarnetBtn',
-      advance: 'manual' },
+    { title: 'Rechercher un ingrédient',
+      body: 'Tape un nom dans la barre de recherche, ou clique directement un point du nuage pour l\'ajouter à ta sélection.',
+      targetId: 'search' },
+    { title: 'Composer un plat',
+      body: 'Ajoutes-en un deuxième — le bloc "Score du plat" (Harmonie + Surprise) apparaît dans le panneau de droite.',
+      targetId: 'search' },
+    { title: 'Filtrer par catégorie',
+      body: 'Clique un item dans la légende (bas gauche) pour n\'afficher qu\'une famille d\'ingrédients et lire leurs noms sur la carte.',
+      targetId: 'leg' },
+    { title: 'Rotation automatique',
+      body: 'Ce bouton lance ou arrête la rotation 3D. Utile pour explorer l\'ensemble du nuage.',
+      targetId: 'spinBtn' },
+    { title: 'Centrer la vue',
+      body: 'Recadre la carte sur les ingrédients de ta sélection courante.',
+      targetId: 'centerBtn' },
+    { title: 'Taille du texte',
+      body: 'Ajuste la taille des labels affichés sur la carte — pratique sur grand écran ou mobile.',
+      targetId: 'textBtn' },
+    { title: 'Carnet & pépites',
+      body: 'Épingle tes meilleurs accords (★★+) au Carnet pour y revenir. Les pépites sont des accords audacieux qui tiennent aromatiquement.',
+      targetId: 'gCarnetBtn' },
   ];
 
   // ── Bubble DOM ────────────────────────────────────────────────────────
@@ -100,8 +111,8 @@
     document.getElementById('atbNext').textContent  = n === STEPS.length - 1 ? 'Terminer ✓' : 'Suivant →';
     setFocus(s.targetId);
     bub.classList.add('show');
-    if (s.advance !== 'manual') obs.observe(document.body, { childList: true, subtree: true });
-    else obs.disconnect();
+    // Scroll l'élément dans le viewport si hors-écran
+    if (focusEl) focusEl.scrollIntoView({ block: 'nearest', inline: 'nearest' });
   }
 
   function advance() {
@@ -110,7 +121,6 @@
   }
 
   function finish() {
-    obs.disconnect();
     bub.classList.remove('show');
     setFocus(null);
     step = -1;
@@ -119,21 +129,15 @@
   }
 
   function start() {
-    obs.disconnect();
     showStep(0);
   }
 
   document.getElementById('atbNext').onclick = (e) => { e.stopPropagation(); advance(); };
   document.getElementById('atbSkip').onclick = (e) => { e.stopPropagation(); finish(); };
   bub.addEventListener('click', (e) => e.stopPropagation());
-
-  // ── Observer : avance sur action (chips dans #panel) ──────────────────
-  const obs = new MutationObserver(() => {
+  document.addEventListener('keydown', (e) => {
     if (step < 0) return;
-    const adv = STEPS[step].advance;
-    const n = document.querySelectorAll('#panel .qchip').length;
-    if      (adv === 'chips:1' && n >= 1) advance();
-    else if (adv === 'chips:2' && n >= 2) advance();
+    if (e.key === 'ArrowRight') advance();
   });
 
   // ── "Revoir le tuto" dans la modale ? ────────────────────────────────
@@ -151,9 +155,9 @@
     };
     goBtn.insertAdjacentElement('afterend', btn);
   }
-  addReplayBtn(); // tente immédiatement (intro déjà dans le DOM à ce stade)
+  addReplayBtn();
 
-  // ── Auto-start : déclenché quand la modale intro se ferme ─────────────
+  // ── Auto-start : après fermeture de la modale intro ───────────────────
   if (!seen) {
     const introEl = document.querySelector('.ai-ov');
     if (introEl) {
