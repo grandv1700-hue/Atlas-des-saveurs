@@ -32,16 +32,14 @@
   .atb-skip { background:none; border:none; color:#7f9a8f; font-size:12px;
     cursor:pointer; padding:0; transition:color .15s; white-space:nowrap; }
   .atb-skip:hover { color:#DCDDB2; }
-  /* Halo sur l'élément pointé */
+  /* Halo sur l'élément pointé — collé à l'élément, sans débordement sur les voisins */
   .tuto-focus { outline:2px solid var(--signature,#E8B94E) !important;
-    outline-offset:5px; border-radius:6px !important;
-    box-shadow:0 0 0 8px rgba(232,185,78,.10) !important;
+    outline-offset:1px; box-shadow:none !important;
+    position:relative; z-index:2;
     animation:tuto-pulse 1.8s ease-in-out infinite; }
   @keyframes tuto-pulse {
-    0%,100% { outline-color:var(--signature,#E8B94E);
-              box-shadow:0 0 0 8px rgba(232,185,78,.10); }
-    50%      { outline-color:rgba(232,185,78,.3);
-              box-shadow:0 0 0 14px rgba(232,185,78,.03); }
+    0%,100% { outline-color:var(--signature,#E8B94E); }
+    50%      { outline-color:rgba(232,185,78,.4); }
   }
   .atb-replay { display:block; width:100%; margin-top:10px; padding:9px;
     border:1px solid #1c2a25; border-radius:9px; background:transparent;
@@ -78,6 +76,63 @@
     for (let i = 0, added = 0; i < PTS.length && added < n; i++) {
       window.select(i); added++;
     }
+  }
+
+  // ── Animation d'intro : saisie "chocolat" + sélection + 2e ingrédient ──
+  function playIntroDemo(onDone) {
+    demoAborted = false;
+    const WORD = 'chocolat';
+    const sbox = document.getElementById('search');
+    if (!sbox) { onDone(); return; }
+
+    if (window.clearSel) window.clearSel();
+    sbox.value = '';
+    setFocus('searchWrapBtn');
+
+    let charIdx = 0;
+
+    function typeNext() {
+      if (demoAborted) return;
+      if (charIdx >= WORD.length) { setTimeout(pickResult, 420); return; }
+      sbox.value += WORD[charIdx++];
+      sbox.dispatchEvent(new Event('input', { bubbles: true }));
+      setTimeout(typeNext, 95);
+    }
+
+    function pickResult() {
+      if (demoAborted) return;
+      const acBox = document.getElementById('ac');
+      const firstItem = acBox && acBox.querySelector('.ac-item');
+      if (firstItem) {
+        firstItem.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
+      } else {
+        // Fallback : sélection directe
+        const PTS = window.EPICURE && window.EPICURE.PTS;
+        if (PTS && window.select) {
+          const idx = PTS.findIndex(p => p.fr.toLowerCase() === 'chocolat');
+          if (idx >= 0) window.select(idx);
+        }
+        sbox.value = '';
+        sbox.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+      setTimeout(addSecond, 650);
+    }
+
+    function addSecond() {
+      if (demoAborted) return;
+      const PTS = window.EPICURE && window.EPICURE.PTS;
+      if (PTS && window.select) {
+        const idx = PTS.findIndex(p => p.fr.toLowerCase() === 'orange');
+        if (idx >= 0) window.select(idx);
+      }
+      setTimeout(() => {
+        if (demoAborted) return;
+        setFocus(null);
+        onDone();
+      }, 750);
+    }
+
+    setTimeout(typeNext, 500);
   }
 
   // ── Helpers d'action réelle (clics sur les vrais boutons) ─────────────
@@ -150,7 +205,7 @@
   document.body.appendChild(bub);
 
   // ── State ─────────────────────────────────────────────────────────────
-  let step = -1, focusEl = null;
+  let step = -1, focusEl = null, demoAborted = false;
 
   function setFocus(id) {
     if (focusEl) { focusEl.classList.remove('tuto-focus'); focusEl = null; }
@@ -181,6 +236,7 @@
   }
 
   function finish() {
+    demoAborted = true;
     bub.classList.remove('show');
     setFocus(null);
     step = -1;
@@ -197,7 +253,8 @@
     // Ouvrir et verrouiller la barre d'outils pendant tout le tuto
     window.ATLAS_CTRL?.setOpen(true);
     window.ATLAS_CTRL?.lock(true);
-    showStep(0);
+    demoAborted = false;
+    playIntroDemo(() => showStep(0));
   }
 
   document.getElementById('atbNext').onclick = (e) => { e.stopPropagation(); advance(); };
